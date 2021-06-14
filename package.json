@@ -1,0 +1,36 @@
+{
+    "name": "@eeue56/baner",
+    "version": "0.0.1",
+    "description": "Flag parsing library in Typescript",
+    "main": "build/baner.js",
+    "types": "build/baner.d.ts",
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "test": "npx @eeue56/bach",
+        "format": "npx prettier --write .",
+        "docs": "npx @eeue56/geiriadur"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/eeue56/baner.git"
+    },
+    "keywords": [
+        "typescript",
+        "hiraeth"
+    ],
+    "author": "eeue56",
+    "license": "BSD-3-Clause",
+    "bugs": {
+        "url": "https://github.com/eeue56/baner/issues"
+    },
+    "homepage": "https://github.com/eeue56/baner#readme",
+    "devDependencies": {
+        "@eeue56/bach": "^0.0.2",
+        "@eeue56/geiriadur": "^0.0.3",
+        "prettier": "github:eeue56/prettier#feat/spacing-around-square-brackets",
+        "typescript": "^4.3.2"
+    },
+    "dependencies": {
+        "@eeue56/ts-core": "^1.1.0"
+    }
+}

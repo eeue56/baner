@@ -1,28 +1,3 @@
-# baner
-
-Flag parsing library in Typescript
-
-Part of the [Hiraeth](https://github.com/eeue56/hiraeth) collection.
-
-# Installation
-
-```bash
-npm install --save @eeue56/baner
-```
-
-# Core functionality
-
-The library is built on the ideas:
-
--   A command line library might have multiple flags
--   Every flag should have help text
--   Arguments to the command line are either: strings, numbers, booleans, or lists of those
-
-[API docs](docs/src/baner.md)
-
-# Example
-
-```typescript
 import {
     empty,
     longFlag,
@@ -77,8 +52,3 @@ if (program.flags["h/help"].isPresent) {
         );
     }
 }
-```
-
-# Name
-
-Baner means "flag" in Welsh. In English, you'd pronounce it as "ban-eh-eruh".
