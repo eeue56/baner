@@ -13,6 +13,9 @@ import {
     bothFlag,
     empty,
     variableList,
+    allErrors,
+    oneOf,
+    allMissing,
 } from "./baner";
 
 export function testShortFlag() {
@@ -96,7 +99,9 @@ export function testShortFlagWithSingleArgument() {
         flags: {
             a: {
                 isPresent: true,
-                arguments: Err("Not enough arguments"),
+                arguments: Err(
+                    "Error parsing -a due to: Not enough arguments. Expected a string. at index 0"
+                ),
             },
         },
         args: [ "-a" ],
@@ -137,7 +142,9 @@ export function testShortFlagWithSingleArgument() {
             flags: {
                 a: {
                     isPresent: true,
-                    arguments: Err("Not enough arguments"),
+                    arguments: Err(
+                        "Error parsing -a due to: Not enough arguments. Expected a string. at index 0"
+                    ),
                 },
             },
             args: [ "-a", "-b", "-c" ],
@@ -247,7 +254,9 @@ export function testLongFlagWithSingleArgument() {
         flags: {
             yes: {
                 isPresent: true,
-                arguments: Err("Not enough arguments"),
+                arguments: Err(
+                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
+                ),
             },
         },
         args: [ "--yes" ],
@@ -259,7 +268,9 @@ export function testLongFlagWithSingleArgument() {
         flags: {
             yes: {
                 isPresent: true,
-                arguments: Err("Not enough arguments"),
+                arguments: Err(
+                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
+                ),
             },
         },
         args: [ "--yes", "-b", "-c" ],
@@ -277,7 +288,9 @@ export function testLongFlagWithSingleArgument() {
         flags: {
             yes: {
                 isPresent: true,
-                arguments: Err("Not enough arguments"),
+                arguments: Err(
+                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
+                ),
             },
         },
         args: [ "-c", "--yes", "-a", "--no", "-b" ],
@@ -524,7 +537,9 @@ export function testMultipleSingleArguments() {
             },
             yes: {
                 isPresent: true,
-                arguments: Err("Not enough arguments"),
+                arguments: Err(
+                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
+                ),
             },
         },
         args: [ "--yes" ],
@@ -540,7 +555,9 @@ export function testMultipleSingleArguments() {
             },
             yes: {
                 isPresent: true,
-                arguments: Err("Not enough arguments"),
+                arguments: Err(
+                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
+                ),
             },
         },
         args: listWithMultipleFlags,
@@ -560,11 +577,15 @@ export function testMultipleSingleArguments() {
             flags: {
                 a: {
                     isPresent: true,
-                    arguments: Err("Not enough arguments"),
+                    arguments: Err(
+                        "Error parsing -a due to: Not enough arguments. Expected a string. at index 0"
+                    ),
                 },
                 yes: {
                     isPresent: true,
-                    arguments: Err("Not enough arguments"),
+                    arguments: Err(
+                        "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
+                    ),
                 },
             },
             args: listWithMultiplebothFlags,
@@ -585,11 +606,15 @@ export function testMultipleSingleArguments() {
             flags: {
                 a: {
                     isPresent: true,
-                    arguments: Err("Not enough arguments"),
+                    arguments: Err(
+                        "Error parsing -a due to: Not enough arguments. Expected a string. at index 0"
+                    ),
                 },
                 yes: {
                     isPresent: true,
-                    arguments: Err("Not enough arguments"),
+                    arguments: Err(
+                        "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
+                    ),
                 },
             },
             args: listWithMultiplebothFlagsInDifferentOrder,
@@ -620,7 +645,9 @@ export function testShortFlagWithSingleNumberArgument() {
         flags: {
             a: {
                 isPresent: true,
-                arguments: Err("Not enough arguments"),
+                arguments: Err(
+                    "Error parsing -a due to: Not enough arguments. Expected a number. at index 0"
+                ),
             },
         },
         args: [ "-a" ],
@@ -634,7 +661,9 @@ export function testShortFlagWithSingleNumberArgument() {
             flags: {
                 a: {
                     isPresent: true,
-                    arguments: Err("Not a number argument"),
+                    arguments: Err(
+                        "Error parsing -a due to: Not a number argument"
+                    ),
                 },
             },
             args: listWithSingleFlagWithArgument,
@@ -725,7 +754,9 @@ export function testShortFlagWithSingleBooleanArgument() {
         flags: {
             a: {
                 isPresent: true,
-                arguments: Err("Not enough arguments"),
+                arguments: Err(
+                    "Error parsing -a due to: Not enough arguments. Expected a boolean. at index 0"
+                ),
             },
         },
         args: [ "-a" ],
@@ -739,7 +770,9 @@ export function testShortFlagWithSingleBooleanArgument() {
             flags: {
                 a: {
                     isPresent: true,
-                    arguments: Err("Not a boolean argument"),
+                    arguments: Err(
+                        "Error parsing -a due to: Not a boolean argument"
+                    ),
                 },
             },
             args: listWithSingleFlagWithArgument,
@@ -800,7 +833,9 @@ export function testShortFlagWithMultipleArguments() {
         flags: {
             a: {
                 isPresent: true,
-                arguments: Err("Not enough arguments"),
+                arguments: Err(
+                    "Error parsing -a due to: Not enough arguments. Expected a boolean. at index 0"
+                ),
             },
         },
         args: [ "-a" ],
@@ -865,4 +900,47 @@ export function testShortFlagWithVariableArguments() {
             args: listWithSingleFlagWithArgument,
         }
     );
+}
+
+export function testAllErrors() {
+    const someParser = parser([
+        shortFlag("a", "some help text", list([ number() ])),
+        shortFlag("b", "B", number()),
+        shortFlag("c", "C", oneOf([ "ban", "can" ])),
+    ]);
+
+    let parsed = parse(someParser, [ "-a", "-b", "-c" ]);
+
+    assert.deepStrictEqual(allErrors(parsed), [
+        "Error parsing -a due to: Not enough arguments. Expected a number. at index 0",
+        "Error parsing -b due to: Not enough arguments. Expected a number.",
+        "Error parsing -c due to: Not enough arguments. Expected one of: ban | can.",
+    ]);
+
+    parsed = parse(someParser, [ "-a", "1", "-b", "-c" ]);
+
+    assert.deepStrictEqual(allErrors(parsed), [
+        "Error parsing -b due to: Not enough arguments. Expected a number.",
+        "Error parsing -c due to: Not enough arguments. Expected one of: ban | can.",
+    ]);
+}
+
+export function testAllMissing() {
+    const someParser = parser([
+        shortFlag("a", "some help text", list([ number() ])),
+        shortFlag("b", "B", number()),
+        shortFlag("c", "C", oneOf([ "ban", "can" ])),
+    ]);
+
+    let parsed = parse(someParser, [ ]);
+
+    assert.deepStrictEqual(allMissing(parsed, [ ]), [ "a", "b", "c" ]);
+
+    parsed = parse(someParser, [ "-a", "1", "-c" ]);
+
+    assert.deepStrictEqual(allMissing(parsed, [ ]), [ "b" ]);
+
+    parsed = parse(someParser, [ "-a", "1" ]);
+
+    assert.deepStrictEqual(allMissing(parsed, [ "c" ]), [ "b" ]);
 }

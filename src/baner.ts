@@ -110,6 +110,25 @@ function VariableListArgument(item: FlagArgument): VariableListArgument {
 }
 
 /**
+ * An argument parser that treats an argument as an enum
+ */
+export function oneOf(items: string[]): FlagArgument {
+    return OneOfArgument(items);
+}
+
+export type OneOfArgument = {
+    kind: "OneOfArgument";
+    items: string[];
+};
+
+function OneOfArgument(items: string[]): OneOfArgument {
+    return {
+        kind: "OneOfArgument",
+        items,
+    };
+}
+
+/**
  * An argument parser that treats an argument as a list
  */
 export function variableList(flagArgumentParser: FlagArgument): FlagArgument {
@@ -124,7 +143,8 @@ export type FlagArgument =
     | BooleanArgument
     | EmptyArgument
     | ListArgument
-    | VariableListArgument;
+    | VariableListArgument
+    | OneOfArgument;
 
 export type Short = {
     kind: "Short";
@@ -254,13 +274,13 @@ function runEmpty(parseable: string[]): Result<string, null> {
 
 function runString(parseable: string[]): Result<string, string> {
     if (parseable.length === 0 || isFlag(parseable[0]))
-        return Err("Not enough arguments");
+        return Err("Not enough arguments. Expected a string.");
     return Ok(parseable[0]);
 }
 
 function runNumber(parseable: string[]): Result<string, number> {
     if (parseable.length === 0 || isFlag(parseable[0]))
-        return Err("Not enough arguments");
+        return Err("Not enough arguments. Expected a number.");
 
     const parsed = parseFloat(parseable[0]);
     if (isNaN(parsed)) return Err("Not a number argument");
@@ -269,7 +289,7 @@ function runNumber(parseable: string[]): Result<string, number> {
 
 function runBoolean(parseable: string[]): Result<string, boolean> {
     if (parseable.length === 0 || isFlag(parseable[0]))
-        return Err("Not enough arguments");
+        return Err("Not enough arguments. Expected a boolean.");
 
     const parsed = parseable[0] === "true" || parseable[0] === "false";
     if (!parsed) return Err("Not a boolean argument");
@@ -288,11 +308,35 @@ function runList(
 
         const res = runArgument(argument, parseable.slice(i));
 
-        if (res.kind === "err") return res;
-        results.push(res.value);
+        if (res.kind === "err") {
+            if (i >= parseable.length || isFlag(parseable[i])) {
+                return Err(`${res.error} at index ${i}`);
+            }
+
+            return res;
+        } else {
+            results.push(res.value);
+        }
     }
 
     return Ok(results);
+}
+
+function runOneOf(
+    items: string[],
+    parseable: string[]
+): Result<string, KnownTypes> {
+    if (parseable.length === 0 || isFlag(parseable[0]))
+        return Err(
+            `Not enough arguments. Expected one of: ${items.join(" | ")}.`
+        );
+
+    for (var i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item === parseable[0]) return Ok(item);
+    }
+
+    return Err(`Didn't match any of: ${items.join(" | ")}`);
 }
 
 function runVariableList(
@@ -336,6 +380,9 @@ function runArgument(
         case "VariableListArgument": {
             return runVariableList(argument.item, parseable);
         }
+        case "OneOfArgument": {
+            return runOneOf(argument.items, parseable);
+        }
     }
 }
 
@@ -355,7 +402,11 @@ function runShortFlag(
     for (var i = 0; i < parseable.length; i++) {
         const value = parseable[i];
         if (value === `-${flagName}`) {
-            const res = runArgument(innerParser, parseable.slice(i + 1));
+            let res = runArgument(innerParser, parseable.slice(i + 1));
+
+            if (res.kind === "err") {
+                res = Err(`Error parsing -${flagName} due to: ${res.error}`);
+            }
 
             return {
                 name: flagName,
@@ -388,7 +439,11 @@ function runLongFlag<a>(
     for (var i = 0; i < parseable.length; i++) {
         const value = parseable[i];
         if (value === `--${flagName}`) {
-            const res = runArgument(innerParser, parseable.slice(i + 1));
+            let res = runArgument(innerParser, parseable.slice(i + 1));
+
+            if (res.kind === "err") {
+                res = Err(`Error parsing --${flagName} due to: ${res.error}`);
+            }
 
             return {
                 name: flagName,
@@ -426,7 +481,13 @@ function runBothFlag(
     for (var i = 0; i < parseable.length; i++) {
         const value = parseable[i];
         if (value === `-${shortFlagName}` || value === `--${longFlagName}`) {
-            const res = runArgument(innerParser, parseable.slice(i + 1));
+            let res = runArgument(innerParser, parseable.slice(i + 1));
+
+            if (res.kind === "err") {
+                res = Err(
+                    `Error parsing -${shortFlag}/--${longFlagName} due to: ${res.error}`
+                );
+            }
 
             return {
                 name: combinedFlagName,
@@ -523,6 +584,8 @@ function helpFlagArgumentParser(parser: FlagArgument): string {
             );
         case "VariableListArgument":
             return "[" + helpFlagArgumentParser(parser.item) + "...]";
+        case "OneOfArgument":
+            return parser.items.join(" | ");
     }
 }
 
@@ -551,6 +614,37 @@ export function help(flagParser: ProgramParser): string {
             }
         })
         .join("\n");
+}
+
+/**
+ * Reports all errors in a program, ignoring missing flags.
+ */
+export function allErrors(program: Program): string[] {
+    const errors: string[] = [ ];
+
+    Object.keys(program.flags).map((key) => {
+        if (!program.flags[key].isPresent) return;
+        const argument = program.flags[key].arguments;
+        if (argument.kind === "err") {
+            errors.push(argument.error);
+        }
+    });
+
+    return errors;
+}
+
+/**
+ * Reports missing flags, ignoring the ones you don't care about.
+ */
+export function allMissing(program: Program, ignore: string[]): string[] {
+    const errors: string[] = [ ];
+
+    Object.keys(program.flags).map((key) => {
+        if (ignore.indexOf(key) > -1) return;
+        if (!program.flags[key].isPresent) errors.push(key);
+    });
+
+    return errors;
 }
 
 /**

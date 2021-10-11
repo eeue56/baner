@@ -91,13 +91,30 @@ export type VariableListArgument = {
 ```
 
 [View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L99-L103)
+## oneOf
+```javascript
+export function oneOf(items: string[]): FlagArgument {
+```
+
+An argument parser that treats an argument as an enum
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L114-L114)
+## type OneOfArgument 
+```javascript
+export type OneOfArgument = {
+    kind: "OneOfArgument";
+    items: string[];
+};
+
+```
+
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L118-L122)
 ## variableList
 ```javascript
 export function variableList(flagArgumentParser: FlagArgument): FlagArgument {
 ```
 
 An argument parser that treats an argument as a list
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L114-L114)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L133-L133)
 ## type FlagArgument 
 ```javascript
 export type FlagArgument =
@@ -106,11 +123,12 @@ export type FlagArgument =
     | BooleanArgument
     | EmptyArgument
     | ListArgument
-    | VariableListArgument;
+    | VariableListArgument
+    | OneOfArgument;
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L120-L127)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L139-L147)
 ## type Short 
 ```javascript
 export type Short = {
@@ -122,7 +140,7 @@ export type Short = {
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L128-L134)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L148-L154)
 ## type Long 
 ```javascript
 export type Long = {
@@ -134,7 +152,7 @@ export type Long = {
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L144-L150)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L164-L170)
 ## type Both 
 ```javascript
 export type Both = {
@@ -147,28 +165,28 @@ export type Both = {
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L160-L167)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L180-L187)
 ## type Flag 
 ```javascript
 export type Flag = Short | Long | Both;
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L183-L184)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L203-L204)
 ## shortFlag
 ```javascript
 export function shortFlag(name: string, help: string, parser: FlagArgument) {
 ```
 
 A short flag, like -y
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L188-L188)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L208-L208)
 ## longFlag
 ```javascript
 export function longFlag(name: string, help: string, parser: FlagArgument) {
 ```
 
 A long flag, like --yes
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L195-L195)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L215-L215)
 ## bothFlag
 ```javascript
 export function bothFlag(
@@ -180,7 +198,7 @@ export function bothFlag(
 ```
 
 A short or long flag, like -y or --yes
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L202-L207)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L222-L227)
 ## type ProgramParser 
 ```javascript
 export type ProgramParser = {
@@ -190,14 +208,14 @@ export type ProgramParser = {
 ```
 
 A program parser is composed of an array of flags
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L214-L217)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L234-L237)
 ## parser
 ```javascript
 export function parser(flags: Flag[]): ProgramParser {
 ```
 
 A parser is composed of an array of flags
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L221-L221)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L241-L241)
 ## type Program 
 ```javascript
 export type Program = {
@@ -214,18 +232,32 @@ export type Program = {
 ```
 
 A Program contains all arguments given to it, and an record of all the flags
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L230-L240)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L250-L260)
 ## help
 ```javascript
 export function help(flagParser: ProgramParser): string {
 ```
 
 Creates a help text for a given program parser
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L531-L531)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L594-L594)
+## allErrors
+```javascript
+export function allErrors(program: Program): string[] {
+```
+
+Reports all errors in a program, ignoring missing flags.
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L621-L621)
+## allMissing
+```javascript
+export function allMissing(program: Program, ignore: string[]): string[] {
+```
+
+Reports missing flags, ignoring the ones you don't care about.
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L638-L638)
 ## parse
 ```javascript
 export function parse(flagParser: ProgramParser, args: string[]): Program {
 ```
 
 Runs a flag parser on the args
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L558-L558)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L652-L652)

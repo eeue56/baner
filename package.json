@@ -25,7 +25,7 @@
     },
     "homepage": "https://github.com/eeue56/baner#readme",
     "devDependencies": {
-        "@eeue56/bach": "^0.0.2",
+        "@eeue56/bach": "^0.0.4",
         "@eeue56/geiriadur": "^0.0.3",
         "prettier": "github:eeue56/prettier#feat/spacing-around-square-brackets",
         "typescript": "^4.3.2"
