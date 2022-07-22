@@ -1,6 +1,6 @@
 {
     "name": "@eeue56/baner",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "Flag parsing library in Typescript",
     "main": "build/baner.js",
     "types": "build/baner.d.ts",
