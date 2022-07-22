@@ -308,7 +308,7 @@ function runList(
 
         const res = runArgument(argument, parseable.slice(i));
 
-        if (res.kind === "err") {
+        if (res.kind === "Err") {
             if (i >= parseable.length || isFlag(parseable[i])) {
                 return Err(`${res.error} at index ${i}`);
             }
@@ -350,7 +350,7 @@ function runVariableList(
 
         const res = runArgument(flagArgument, parseable.slice(i));
 
-        if (res.kind === "err") return res;
+        if (res.kind === "Err") return res;
         results.push(res.value);
     }
 
@@ -404,7 +404,7 @@ function runShortFlag(
         if (value === `-${flagName}`) {
             let res = runArgument(innerParser, parseable.slice(i + 1));
 
-            if (res.kind === "err") {
+            if (res.kind === "Err") {
                 res = Err(`Error parsing -${flagName} due to: ${res.error}`);
             }
 
@@ -441,7 +441,7 @@ function runLongFlag<a>(
         if (value === `--${flagName}`) {
             let res = runArgument(innerParser, parseable.slice(i + 1));
 
-            if (res.kind === "err") {
+            if (res.kind === "Err") {
                 res = Err(`Error parsing --${flagName} due to: ${res.error}`);
             }
 
@@ -483,7 +483,7 @@ function runBothFlag(
         if (value === `-${shortFlagName}` || value === `--${longFlagName}`) {
             let res = runArgument(innerParser, parseable.slice(i + 1));
 
-            if (res.kind === "err") {
+            if (res.kind === "Err") {
                 res = Err(
                     `Error parsing -${shortFlag}/--${longFlagName} due to: ${res.error}`
                 );
@@ -625,7 +625,7 @@ export function allErrors(program: Program): string[] {
     Object.keys(program.flags).map((key) => {
         if (!program.flags[key].isPresent) return;
         const argument = program.flags[key].arguments;
-        if (argument.kind === "err") {
+        if (argument.kind === "Err") {
             errors.push(argument.error);
         }
     });
