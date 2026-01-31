@@ -1,265 +1,52 @@
-import { Err, Ok, Result } from "@eeue56/ts-core/build/main/lib/result";
+import type {
+    BaseParseableTypes,
+    BasicTypes,
+    Both,
+    Flag,
+    FlagArgument,
+    FlagResult,
+    InferFlagArgumentType,
+    InferFlagName,
+    InferFlagType,
+    KnownTypes,
+    Long,
+    Program,
+    ProgramParser,
+    ProgramValues,
+    Result,
+    Short,
+} from "./types.ts";
 
-/**
- * A result from a flag: contains the flag name, if it was present in the arguments,
- * and whether the arguments were parsed as described.
- */
-type FlagResult = {
-    name: string;
-    isPresent: boolean;
-    arguments: Result<string, KnownTypes>;
-};
-
-export type StringArgument = {
-    kind: "StringArgument";
-};
-
-function StringArgument(): StringArgument {
-    return {
-        kind: "StringArgument",
-    };
-}
-
-/**
- * An argument parser that treats an argument as a string
- */
-export function string(): FlagArgument {
-    return StringArgument();
-}
-
-export type NumberArgument = {
-    kind: "NumberArgument";
-};
-
-function NumberArgument(): NumberArgument {
-    return {
-        kind: "NumberArgument",
-    };
-}
-
-/**
- * An argument parser that treats an argument as a number
- */
-export function number(): FlagArgument {
-    return NumberArgument();
-}
-
-export type BooleanArgument = {
-    kind: "BooleanArgument";
-};
-
-function BooleanArgument(): BooleanArgument {
-    return {
-        kind: "BooleanArgument",
-    };
-}
-
-/**
- * An argument parser that treats an argument as a boolean
- */
-export function boolean(): FlagArgument {
-    return BooleanArgument();
-}
-
-export type EmptyArgument = {
-    kind: "EmptyArgument";
-};
-
-function EmptyArgument(): EmptyArgument {
-    return {
-        kind: "EmptyArgument",
-    };
-}
-
-/**
- * An argument parser that always passes
- */
-export function empty(): FlagArgument {
-    return EmptyArgument();
-}
-
-export type ListArgument = {
-    kind: "ListArgument";
-    items: FlagArgument[];
-};
-
-function ListArgument(items: FlagArgument[]): ListArgument {
-    return {
-        kind: "ListArgument",
-        items,
-    };
-}
-
-/**
- * An argument parser that treats an argument as a list
- */
-export function list(flagArgumentParsers: FlagArgument[]): FlagArgument {
-    return ListArgument(flagArgumentParsers);
-}
-
-export type VariableListArgument = {
-    kind: "VariableListArgument";
-    item: FlagArgument;
-};
-
-function VariableListArgument(item: FlagArgument): VariableListArgument {
-    return {
-        kind: "VariableListArgument",
-        item,
-    };
-}
-
-/**
- * An argument parser that treats an argument as an enum
- */
-export function oneOf(items: string[]): FlagArgument {
-    return OneOfArgument(items);
-}
-
-export type OneOfArgument = {
-    kind: "OneOfArgument";
-    items: string[];
-};
-
-function OneOfArgument(items: string[]): OneOfArgument {
-    return {
-        kind: "OneOfArgument",
-        items,
-    };
-}
-
-/**
- * An argument parser that treats an argument as a list
- */
-export function variableList(flagArgumentParser: FlagArgument): FlagArgument {
-    return VariableListArgument(flagArgumentParser);
-}
-
-type KnownTypes = string | number | boolean | null | KnownTypes[];
-
-export type FlagArgument =
-    | StringArgument
-    | NumberArgument
-    | BooleanArgument
-    | EmptyArgument
-    | ListArgument
-    | VariableListArgument
-    | OneOfArgument;
-
-export type Short = {
-    kind: "Short";
-    name: string;
-    help: string;
-    parser: FlagArgument;
-};
-
-function Short(name: string, help: string, parser: FlagArgument): Short {
-    return {
-        kind: "Short",
-        name,
-        help,
-        parser,
-    };
-}
-
-export type Long = {
-    kind: "Long";
-    name: string;
-    help: string;
-    parser: FlagArgument;
-};
-
-function Long(name: string, help: string, parser: FlagArgument): Long {
-    return {
-        kind: "Long",
-        name,
-        help,
-        parser,
-    };
-}
-
-export type Both = {
-    kind: "Both";
-    shortName: string;
-    longName: string;
-    help: string;
-    parser: FlagArgument;
-};
-
-function Both(
-    shortName: string,
-    longName: string,
-    help: string,
-    parser: FlagArgument
-): Both {
-    return {
-        kind: "Both",
-        shortName,
-        longName,
-        help,
-        parser,
-    };
-}
-
-export type Flag = Short | Long | Both;
-
-/**
- * A short flag, like -y
- */
-export function shortFlag(name: string, help: string, parser: FlagArgument) {
-    return Short(name, help, parser);
-}
-
-/**
- * A long flag, like --yes
- */
-export function longFlag(name: string, help: string, parser: FlagArgument) {
-    return Long(name, help, parser);
-}
-
-/**
- * A short or long flag, like -y or --yes
- */
-export function bothFlag(
-    shortName: string,
-    longName: string,
-    help: string,
-    parser: FlagArgument
-) {
-    return Both(shortName, longName, help, parser);
-}
-
-/**
- * A program parser is composed of an array of flags
- */
-export type ProgramParser = {
-    flags: Flag[];
-};
+import { Err, Ok } from "./types.ts";
 
 /**
  * A parser is composed of an array of flags
  */
-export function parser(flags: Flag[]): ProgramParser {
-    return {
-        flags,
-    };
+export function parser<
+    const flags extends readonly Flag<FlagArgument<KnownTypes>, string>[],
+>(...flags: flags): ProgramParser<flags> {
+    const collectedFlags: Partial<ProgramParser<flags>> = {};
+
+    for (const flag of flags) {
+        switch (flag.kind) {
+            case "Short": {
+                (collectedFlags as any)[flag.name] = flag;
+                break;
+            }
+            case "Long": {
+                (collectedFlags as any)[flag.name] = flag;
+                break;
+            }
+            case "Both": {
+                (collectedFlags as any)[flag.longName] = flag;
+                break;
+            }
+        }
+    }
+    return { flags: collectedFlags } as ProgramParser<flags>;
 }
 
-/**
- * A Program contains all arguments given to it, and an record of all the flags
- */
-export type Program = {
-    args: string[];
-    flags: Record<
-        string,
-        {
-            isPresent: boolean;
-            arguments: Result<string, KnownTypes>;
-        }
-    >;
-};
-
-function isFlag(string: string) {
+function isFlag(string: string): boolean {
     const isNumber = isNaN(parseFloat(string));
     if (isNumber) {
         return string.startsWith("-");
@@ -268,17 +55,13 @@ function isFlag(string: string) {
     return false;
 }
 
-function runEmpty(parseable: string[]): Result<string, null> {
-    return Ok(null);
-}
-
-function runString(parseable: string[]): Result<string, string> {
+function runString(parseable: readonly string[]): Result<string> {
     if (parseable.length === 0 || isFlag(parseable[0]))
         return Err("Not enough arguments. Expected a string.");
     return Ok(parseable[0]);
 }
 
-function runNumber(parseable: string[]): Result<string, number> {
+function runNumber(parseable: readonly string[]): Result<number> {
     if (parseable.length === 0 || isFlag(parseable[0]))
         return Err("Not enough arguments. Expected a number.");
 
@@ -287,9 +70,10 @@ function runNumber(parseable: string[]): Result<string, number> {
     return Ok(parsed);
 }
 
-function runBoolean(parseable: string[]): Result<string, boolean> {
-    if (parseable.length === 0 || isFlag(parseable[0]))
-        return Err("Not enough arguments. Expected a boolean.");
+function runBoolean(parseable: readonly string[]): Result<boolean> {
+    if (parseable.length === 0 || isFlag(parseable[0])) {
+        return Ok(true);
+    }
 
     const parsed = parseable[0] === "true" || parseable[0] === "false";
     if (!parsed) return Err("Not a boolean argument");
@@ -297,16 +81,21 @@ function runBoolean(parseable: string[]): Result<string, boolean> {
     return Ok(parseable[0] === "true");
 }
 
-function runList(
-    flagArguments: FlagArgument[],
-    parseable: string[]
-): Result<string, KnownTypes[]> {
-    const results = [ ];
+function runList<
+    const flagArguments extends readonly FlagArgument<BasicTypes>[],
+>(
+    flagArguments: flagArguments,
+    parseable: readonly string[],
+): Result<readonly InferFlagArgumentType<flagArguments[number]>[]> {
+    const results: InferFlagArgumentType<flagArguments[number]>[] =
+        [] as InferFlagArgumentType<flagArguments[number]>[];
 
     for (var i = 0; i < flagArguments.length; i++) {
         const argument = flagArguments[i];
 
-        const res = runArgument(argument, parseable.slice(i));
+        const res = runArgument(argument, parseable.slice(i)) as Result<
+            InferFlagArgumentType<flagArguments[number]>
+        >;
 
         if (res.kind === "Err") {
             if (i >= parseable.length || isFlag(parseable[i])) {
@@ -323,12 +112,12 @@ function runList(
 }
 
 function runOneOf(
-    items: string[],
-    parseable: string[]
-): Result<string, KnownTypes> {
+    items: readonly string[],
+    parseable: readonly string[],
+): Result<BaseParseableTypes> {
     if (parseable.length === 0 || isFlag(parseable[0]))
         return Err(
-            `Not enough arguments. Expected one of: ${items.join(" | ")}.`
+            `Not enough arguments. Expected one of: ${items.join(" | ")}.`,
         );
 
     for (var i = 0; i < items.length; i++) {
@@ -339,11 +128,11 @@ function runOneOf(
     return Err(`Didn't match any of: ${items.join(" | ")}`);
 }
 
-function runVariableList(
-    flagArgument: FlagArgument,
-    parseable: string[]
-): Result<string, KnownTypes[]> {
-    const results = [ ];
+function runVariableList<flagType extends BaseParseableTypes>(
+    flagArgument: FlagArgument<flagType>,
+    parseable: readonly string[],
+): Result<readonly flagType[]> {
+    const results: flagType[] = [];
 
     for (var i = 0; i < parseable.length; i++) {
         if (isFlag(parseable[i])) break;
@@ -351,51 +140,65 @@ function runVariableList(
         const res = runArgument(flagArgument, parseable.slice(i));
 
         if (res.kind === "Err") return res;
-        results.push(res.value);
+        results.push(res.value as flagType);
     }
 
     return Ok(results);
 }
 
-function runArgument(
-    argument: FlagArgument,
-    parseable: string[]
-): Result<string, KnownTypes> {
+function runArgument<const flagType extends FlagArgument<KnownTypes>>(
+    argument: flagType,
+    parseable: readonly string[],
+): Result<InferFlagArgumentType<flagType>> {
     switch (argument.kind) {
         case "StringArgument": {
-            return runString(parseable);
+            return runString(parseable) as Result<
+                InferFlagArgumentType<flagType>
+            >;
         }
         case "NumberArgument": {
-            return runNumber(parseable);
+            return runNumber(parseable) as Result<
+                InferFlagArgumentType<flagType>
+            >;
         }
         case "BooleanArgument": {
-            return runBoolean(parseable);
-        }
-        case "EmptyArgument": {
-            return runEmpty(parseable);
+            return runBoolean(parseable) as Result<
+                InferFlagArgumentType<flagType>
+            >;
         }
         case "ListArgument": {
-            return runList(argument.items, parseable);
+            return runList(argument.items, parseable) as Result<
+                InferFlagArgumentType<flagType>
+            >;
         }
         case "VariableListArgument": {
-            return runVariableList(argument.item, parseable);
+            return runVariableList(argument.item, parseable) as Result<
+                InferFlagArgumentType<flagType>
+            >;
         }
         case "OneOfArgument": {
-            return runOneOf(argument.items, parseable);
+            return runOneOf(argument.items, parseable) as Result<
+                InferFlagArgumentType<flagType>
+            >;
         }
     }
 }
 
-function runShortFlag(
-    flagName: string,
-    innerParser: FlagArgument,
-    parseable: string[]
-): FlagResult {
+function runShortFlag<
+    const flagArgument extends FlagArgument<KnownTypes>,
+    const name extends string,
+>(
+    flag: Short<flagArgument, name>,
+    parseable: readonly string[],
+): FlagResult<flagArgument, name> {
+    const flagName: name = flag.name;
+    const innerParser: flagArgument = flag.parser;
+
     if (parseable.length === 0) {
         return {
-            name: flagName,
             isPresent: false,
             arguments: Err(`Short flag -${flagName} not found`),
+            flag: flag,
         };
     }
 
@@ -409,30 +212,35 @@ function runShortFlag(
             }
 
             return {
-                name: flagName,
                 isPresent: true,
-                arguments: res,
+                arguments: res as Result<InferFlagArgumentType<flagArgument>>,
+                flag: flag,
             };
         }
     }
 
     return {
-        name: flagName,
         isPresent: false,
         arguments: Err(`Short flag -${flagName} not found`),
+        flag: flag,
     };
 }
 
-function runLongFlag<a>(
-    flagName: string,
-    innerParser: FlagArgument,
-    parseable: string[]
-): FlagResult {
+function runLongFlag<
+    const flagArgument extends FlagArgument<KnownTypes>,
+    const name extends string,
+>(
+    flag: Long<flagArgument, name>,
+    parseable: readonly string[],
+): FlagResult<flagArgument, name> {
+    const flagName: name = flag.name;
+    const innerParser: flagArgument = flag.parser;
+
     if (parseable.length === 0) {
         return {
-            name: flagName,
             isPresent: false,
             arguments: Err(`Long flag --${flagName} not found`),
+            flag,
         };
     }
 
@@ -446,35 +254,38 @@ function runLongFlag<a>(
             }
 
             return {
-                name: flagName,
                 isPresent: true,
-                arguments: res,
+                arguments: res as Result<InferFlagArgumentType<flagArgument>>,
+                flag,
             };
         }
     }
 
     return {
-        name: flagName,
         isPresent: false,
         arguments: Err(`Long flag --${flagName} not found`),
+        flag,
     };
 }
 
-function runBothFlag(
-    shortFlagName: string,
-    longFlagName: string,
-    innerParser: FlagArgument,
-    parseable: string[]
-): FlagResult {
-    const combinedFlagName = shortFlagName + "/" + longFlagName;
+function runBothFlag<
+    const flagArgument extends FlagArgument<KnownTypes>,
+    const name extends string,
+>(
+    flag: Both<flagArgument, name>,
+    parseable: readonly string[],
+): FlagResult<flagArgument, name> {
+    const shortFlagName = flag.shortName;
+    const longFlagName = flag.longName;
+    const innerParser: flagArgument = flag.parser;
+
+    const combinedFlagName = `-${shortFlagName}/--${longFlagName}`;
 
     if (parseable.length === 0) {
         return {
-            name: combinedFlagName,
             isPresent: false,
-            arguments: Err(
-                `Mixed flag -${shortFlagName}/--${longFlagName} not found`
-            ),
+            arguments: Err(`Mixed flag ${combinedFlagName} not found`),
+            flag,
         };
     }
 
@@ -485,90 +296,83 @@ function runBothFlag(
 
             if (res.kind === "Err") {
                 res = Err(
-                    `Error parsing -${shortFlag}/--${longFlagName} due to: ${res.error}`
+                    `Error parsing ${combinedFlagName} due to: ${res.error}`,
                 );
             }
 
             return {
-                name: combinedFlagName,
                 isPresent: true,
-                arguments: res,
+                arguments: res as Result<InferFlagArgumentType<flagArgument>>,
+                flag,
             };
         }
     }
 
     return {
-        name: combinedFlagName,
         isPresent: false,
-        arguments: Err(
-            `Mixed flag -${shortFlagName}/--${longFlagName} not found`
-        ),
+        arguments: Err(`Mixed flag ${combinedFlagName} not found`),
+        flag,
     };
 }
 
-function runParser(programParser: ProgramParser, parseable: string[]): Program {
-    const emptyRecord: Record<
-        string,
-        {
-            isPresent: boolean;
-            arguments: Result<string, KnownTypes>;
-        }
-    > = {};
+function runParser<
+    const flags extends readonly Flag<FlagArgument<KnownTypes>, string>[],
+>(
+    programParser: ProgramParser<flags>,
+    parseable: readonly string[],
+): Program<flags> {
+    const emptyRecord: Program<flags> = {
+        args: parseable,
+        flags: {} as any,
+    };
 
-    for (var i = 0; i < programParser.flags.length; i++) {
-        const flag = programParser.flags[i];
+    for (const flag of Object.values(programParser.flags) as flags[number][]) {
         let res;
 
         switch (flag.kind) {
             case "Short": {
-                res = runShortFlag(flag.name, flag.parser, parseable);
+                res = runShortFlag(flag, parseable);
                 break;
             }
             case "Long": {
-                res = runLongFlag(flag.name, flag.parser, parseable);
+                res = runLongFlag(flag, parseable);
                 break;
             }
             case "Both": {
-                const bothFlag = flag as Both;
-                res = runBothFlag(
-                    bothFlag.shortName,
-                    bothFlag.longName,
-                    bothFlag.parser,
-                    parseable
-                );
+                res = runBothFlag(flag, parseable);
             }
         }
 
-        let name;
+        let name: InferFlagName<flags[number]>;
 
         switch (flag.kind) {
             case "Short": {
-                name = flag.name;
+                name = flag.name as InferFlagName<flags[number]>;
                 break;
             }
             case "Long": {
-                name = flag.name;
+                name = flag.name as InferFlagName<flags[number]>;
                 break;
             }
             case "Both": {
-                const bothFlag = flag as Both;
-                name = bothFlag.shortName + "/" + bothFlag.longName;
+                name = flag.longName as InferFlagName<flags[number]>;
+                break;
             }
         }
 
-        emptyRecord[name] = {
+        (emptyRecord.flags as any)[name] = {
             isPresent: res.isPresent,
-            arguments: res.arguments,
+            arguments: res.arguments as Result<InferFlagType<flags[number]>>,
+            flag,
         };
     }
 
-    return {
-        args: parseable,
-        flags: emptyRecord,
-    };
+    return emptyRecord;
 }
 
-function helpFlagArgumentParser(parser: FlagArgument): string {
+function helpFlagArgumentParser<
+    const flagArgument extends FlagArgument<KnownTypes>,
+>(parser: flagArgument): string {
     switch (parser.kind) {
         case "BooleanArgument":
             return "boolean";
@@ -576,8 +380,6 @@ function helpFlagArgumentParser(parser: FlagArgument): string {
             return "number";
         case "StringArgument":
             return "string";
-        case "EmptyArgument":
-            return "";
         case "ListArgument":
             return (
                 "[" + parser.items.map(helpFlagArgumentParser).join(" ") + "]"
@@ -592,39 +394,53 @@ function helpFlagArgumentParser(parser: FlagArgument): string {
 /**
  * Creates a help text for a given program parser
  */
-export function help(flagParser: ProgramParser): string {
-    return flagParser.flags
-        .map((flag: Flag) => {
-            switch (flag.kind) {
-                case "Short": {
-                    return `  -${flag.name} ${helpFlagArgumentParser(
-                        flag.parser
-                    )}:\t\t${flag.help}`;
-                }
-                case "Long": {
-                    return `  --${flag.name} ${helpFlagArgumentParser(
-                        flag.parser
-                    )}:\t\t${flag.help}`;
-                }
-                case "Both": {
-                    return `  -${flag.shortName}, --${
-                        flag.longName
-                    } ${helpFlagArgumentParser(flag.parser)}:\t\t${flag.help}`;
-                }
+export function help<
+    const flags extends readonly Flag<FlagArgument<KnownTypes>, string>[],
+>(flagParser: ProgramParser<flags>): string {
+    const output: string[] = [];
+    for (const flag of Object.values(flagParser.flags) as flags[number][]) {
+        switch (flag.kind) {
+            case "Short": {
+                output.push(
+                    `  -${flag.name} ${helpFlagArgumentParser(
+                        flag.parser,
+                    )}:\t\t${flag.help}`,
+                );
+                break;
             }
-        })
-        .join("\n");
+            case "Long": {
+                output.push(
+                    `  --${flag.name} ${helpFlagArgumentParser(
+                        flag.parser,
+                    )}:\t\t${flag.help}`,
+                );
+                break;
+            }
+            case "Both": {
+                output.push(
+                    `  -${flag.shortName}, --${
+                        flag.longName
+                    } ${helpFlagArgumentParser(flag.parser)}:\t\t${flag.help}`,
+                );
+                break;
+            }
+        }
+    }
+
+    return output.join("\n");
 }
 
 /**
  * Reports all errors in a program, ignoring missing flags.
  */
-export function allErrors(program: Program): string[] {
-    const errors: string[] = [ ];
+export function allErrors<
+    const flags extends readonly Flag<FlagArgument<KnownTypes>, string>[],
+>(program: Program<flags>): string[] {
+    const errors: string[] = [];
 
     Object.keys(program.flags).map((key) => {
-        if (!program.flags[key].isPresent) return;
-        const argument = program.flags[key].arguments;
+        if (!(program.flags as any)[key].isPresent) return;
+        const argument = (program.flags as any)[key].arguments;
         if (argument.kind === "Err") {
             errors.push(argument.error);
         }
@@ -636,24 +452,49 @@ export function allErrors(program: Program): string[] {
 /**
  * Reports missing flags, ignoring the ones you don't care about.
  */
-export function allMissing(program: Program, ignore: string[]): string[] {
-    const errors: string[] = [ ];
+export function allMissing<
+    const flags extends readonly Flag<FlagArgument<KnownTypes>, string>[],
+>(program: Program<flags>, ignore: string[]): string[] {
+    const errors: string[] = [];
 
-    Object.keys(program.flags).map((key) => {
-        if (ignore.indexOf(key) > -1) return;
-        if (!program.flags[key].isPresent) errors.push(key);
-    });
+    for (const key of Object.keys(program.flags)) {
+        if (ignore.indexOf(key) > -1) continue;
+        if (!(program.flags as any)[key].isPresent) errors.push(key);
+    }
 
     return errors;
 }
 
 /**
+ * Gets the Ok values out of the program as the raw type (i.e a `string` from `string()`)
+ */
+export function allValues<
+    const flags extends readonly Flag<FlagArgument<KnownTypes>, string>[],
+>(program: Program<flags>): ProgramValues<flags> {
+    const values: Partial<ProgramValues<flags>> = {};
+
+    for (const key of Object.keys(program.flags)) {
+        if (!(program.flags as any)[key].isPresent) continue;
+        const argument = (program.flags as any)[key].arguments;
+        if (argument.kind === "Ok") {
+            values[key as keyof ProgramValues<flags>] = argument.value;
+        } else {
+            values[key as keyof ProgramValues<flags>] = undefined;
+        }
+    }
+
+    return values as unknown as ProgramValues<flags>;
+}
+
+/**
  * Runs a flag parser on the args
  */
-export function parse(flagParser: ProgramParser, args: string[]): Program {
-    const parseable: string[] = [ ];
+export function parse<
+    const flags extends readonly Flag<FlagArgument<KnownTypes>, string>[],
+>(flagParser: ProgramParser<flags>, args: string[]): Program<flags> {
+    const parseable: string[] = [];
 
-    args.forEach((arg) => {
+    for (const arg of args) {
         if (arg.indexOf("=") > -1) {
             parseable.push(arg.split("=")[0]);
 
@@ -667,8 +508,10 @@ export function parse(flagParser: ProgramParser, args: string[]): Program {
                 parseable.push(splitArg);
             });
         }
-    });
+    }
 
     const res = runParser(flagParser, parseable);
     return res;
 }
+
+export * from "./types.ts";

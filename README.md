@@ -14,43 +14,29 @@ npm install --save @eeue56/baner
 
 The library is built on the ideas:
 
--   A command line library might have multiple flags
--   Every flag should have help text
--   Arguments to the command line are either: strings, numbers, booleans, or lists of those
+- A command line library might have multiple flags
+- Every flag should have help text
+- Arguments to the command line are either: strings, numbers, booleans, or lists of those
+- Types are good, let's do more of that.
 
 [API docs](docs/src/baner.md)
 
 # Example
 
 ```typescript
-import {
-    empty,
-    longFlag,
-    bothFlag,
-    number,
-    parse,
-    parser,
-    string,
-    help,
-    variableList,
-    oneOf,
-    allErrors,
-    allMissing,
-} from "@eeue56/baner";
-
-const helloParser = parser([
+const helloParser = parser(
     longFlag("name", "The name to say hi to", string()),
     longFlag("age", "The age of the person", number()),
     longFlag("pets", "Names of your pets", variableList(string())),
-    longFlag("type", "Type of owner", oneOf([ "human", "alien" ])),
+    longFlag("type", "Type of owner", oneOf(["human", "alien"])),
     bothFlag("h", "help", "This help text", empty()),
-]);
+);
 
 function sayHi(
     name: string,
     age: number,
     pets: string[],
-    type: "human" | "alien"
+    type: "human" | "alien",
 ): void {
     console.log(`Hi, ${name}! Congrats on being ${age} years old.`);
     if (type === "alien") console.log("Welcome to earth!");
@@ -58,8 +44,8 @@ function sayHi(
     if (pets.length > 0) {
         console.log(
             `Wow, you had ${pets.length} pets. I bet ${pets.join(
-                ", "
-            )} were good pets to have`
+                ", ",
+            )} were good pets to have`,
         );
     }
 }
@@ -71,11 +57,12 @@ function showHelp(): void {
 
 const program = parse(helloParser, process.argv);
 
-if (program.flags["h/help"].isPresent) {
+if (program.flags["help"].isPresent) {
     showHelp();
 } else {
     const errors = allErrors(program);
-    const missing = allMissing(program, [ "h/help" ]);
+    const missing = allMissing(program, ["help"]);
+    const values = allValues(program);
 
     if (errors.length > 0) {
         console.log("Errors:");
@@ -84,14 +71,7 @@ if (program.flags["h/help"].isPresent) {
         console.log("Missing flags:");
         console.log(missing.join("\n"));
     } else {
-        sayHi(
-            (program.flags.name.arguments as Ok<string>).value,
-            (program.flags.age.arguments as Ok<number>).value as number,
-            (program.flags.pets.arguments as Ok<string[]>).value as string[],
-            (program.flags.type.arguments as Ok<string>).value as
-                | "human"
-                | "alien"
-        );
+        sayHi(values.name!, values.age!, values.pets!, values.type!);
     }
 }
 ```

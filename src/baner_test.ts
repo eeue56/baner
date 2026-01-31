@@ -1,60 +1,74 @@
-import { Ok } from "@eeue56/ts-core/build/main/lib/result";
-import { Err } from "@eeue56/ts-core/build/main/lib/result";
 import * as assert from "assert";
+import { allErrors, allMissing, parse, parser } from "./baner.ts";
 import {
-    shortFlag,
-    parse,
-    longFlag,
-    parser,
-    list,
-    string,
-    number,
     boolean,
     bothFlag,
     empty,
-    variableList,
-    allErrors,
+    Err,
+    list,
+    longFlag,
+    number,
+    Ok,
     oneOf,
-    allMissing,
-} from "./baner";
+    shortFlag,
+    string,
+    variableList,
+} from "./types.ts";
+
+import type { Result } from "./types.ts";
+
+/**
+ * https://nodejs.org/api/assert.html#assertdeepstrictequalactual-expected-message
+ */
+export function deepStrictEqual<t>(
+    actual: t,
+    expected: t,
+    message?: string | Error,
+): void {
+    return assert.deepStrictEqual(actual, expected, message);
+}
 
 export function testShortFlag() {
-    const emptyAParser = parser([ shortFlag("a", "some help text", empty()) ]);
+    const flagParser = shortFlag("a", "some help text", empty());
+    const emptyAParser = parser(flagParser);
 
-    const emptyList: string[] = [ ];
+    const emptyList: string[] = [];
 
-    assert.deepStrictEqual(parse(emptyAParser, emptyList), {
+    deepStrictEqual(parse(emptyAParser, emptyList), {
         flags: {
             a: {
                 isPresent: false,
-                arguments: Err("Short flag -a not found"),
+                arguments: Err("Short flag -a not found") as Result<boolean>,
+                flag: flagParser,
             },
         },
-        args: [ ],
+        args: [],
     });
 
-    const listWithSingleFlag: string[] = [ "-a" ];
+    const listWithSingleFlag: string[] = ["-a"];
 
-    assert.deepStrictEqual(parse(emptyAParser, listWithSingleFlag), {
+    deepStrictEqual(parse(emptyAParser, listWithSingleFlag), {
         flags: {
             a: {
                 isPresent: true,
-                arguments: Ok(null),
+                arguments: Ok(true),
+                flag: flagParser,
             },
         },
-        args: [ "-a" ],
+        args: ["-a"],
     });
 
-    const listWithMultipleFlags: string[] = [ "-a", "-b", "-c" ];
+    const listWithMultipleFlags: string[] = ["-a", "-b", "-c"];
 
-    assert.deepStrictEqual(parse(emptyAParser, listWithMultipleFlags), {
+    deepStrictEqual(parse(emptyAParser, listWithMultipleFlags), {
         flags: {
             a: {
                 isPresent: true,
-                arguments: Ok(null),
+                arguments: Ok(true),
+                flag: flagParser,
             },
         },
-        args: [ "-a", "-b", "-c" ],
+        args: ["-a", "-b", "-c"],
     });
 
     const listWithMultiplebothFlags: string[] = [
@@ -65,90 +79,92 @@ export function testShortFlag() {
         "-b",
     ];
 
-    assert.deepStrictEqual(parse(emptyAParser, listWithMultiplebothFlags), {
+    deepStrictEqual(parse(emptyAParser, listWithMultiplebothFlags), {
         flags: {
             a: {
                 isPresent: true,
-                arguments: Ok(null),
+                arguments: Ok(true),
+                flag: flagParser,
             },
         },
-        args: [ "--yes", "-c", "-a", "--no", "-b" ],
+        args: ["--yes", "-c", "-a", "--no", "-b"],
     });
 }
 
 export function testShortFlagWithSingleArgument() {
-    const singleArgParser = parser([
-        shortFlag("a", "some help text", list([ string() ])),
-    ]);
+    const flagParser = shortFlag("a", "some help text", list([string()]));
+    const singleArgParser = parser(flagParser);
 
-    const emptyList: string[] = [ ];
+    const emptyList: string[] = [];
 
-    assert.deepStrictEqual(parse(singleArgParser, emptyList), {
+    deepStrictEqual(parse(singleArgParser, emptyList), {
         flags: {
             a: {
                 isPresent: false,
-                arguments: Err("Short flag -a not found"),
+                arguments: Err("Short flag -a not found") as Result<[string]>,
+                flag: flagParser,
             },
         },
-        args: [ ],
+        args: [],
     });
 
-    const listWithSingleFlag: string[] = [ "-a" ];
+    const listWithSingleFlag: string[] = ["-a"];
 
-    assert.deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
         flags: {
             a: {
                 isPresent: true,
                 arguments: Err(
-                    "Error parsing -a due to: Not enough arguments. Expected a string. at index 0"
-                ),
+                    "Error parsing -a due to: Not enough arguments. Expected a string. at index 0",
+                ) as Result<[string]>,
+                flag: flagParser,
             },
         },
-        args: [ "-a" ],
+        args: ["-a"],
     });
 
-    const listWithSingleFlagWithArgument: string[] = [ "-a", "hello" ];
+    const listWithSingleFlagWithArgument: string[] = ["-a", "hello"];
 
-    assert.deepStrictEqual(
-        parse(singleArgParser, listWithSingleFlagWithArgument),
-        {
-            flags: {
-                a: {
-                    isPresent: true,
-                    arguments: Ok([ "hello" ]),
-                },
-            },
-            args: [ "-a", "hello" ],
-        }
-    );
-
-    const listWithMultipleFlags: string[] = [ "-a", "hello", "-b", "-c" ];
-
-    assert.deepStrictEqual(parse(singleArgParser, listWithMultipleFlags), {
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlagWithArgument), {
         flags: {
             a: {
                 isPresent: true,
-                arguments: Ok([ "hello" ]),
+                arguments: Ok(["hello"] as [string]),
+                flag: flagParser,
             },
         },
-        args: [ "-a", "hello", "-b", "-c" ],
+        args: ["-a", "hello"],
     });
 
-    const listWithMultipleFlagsWithoutArgument: string[] = [ "-a", "-b", "-c" ];
+    const listWithMultipleFlags: string[] = ["-a", "hello", "-b", "-c"];
 
-    assert.deepStrictEqual(
+    deepStrictEqual(parse(singleArgParser, listWithMultipleFlags), {
+        flags: {
+            a: {
+                isPresent: true,
+                arguments: Ok(["hello"] as [string]),
+                flag: flagParser,
+            },
+        },
+        args: ["-a", "hello", "-b", "-c"],
+    });
+
+    const listWithMultipleFlagsWithoutArgument: string[] = ["-a", "-b", "-c"];
+
+    deepStrictEqual(
         parse(singleArgParser, listWithMultipleFlagsWithoutArgument),
         {
             flags: {
                 a: {
                     isPresent: true,
                     arguments: Err(
-                        "Error parsing -a due to: Not enough arguments. Expected a string. at index 0"
-                    ),
+                        "Error parsing -a due to: Not enough arguments. Expected a string. at index 0",
+                    ) as Result<[string]>,
+                    flag: flagParser,
                 },
             },
-            args: [ "-a", "-b", "-c" ],
-        }
+            args: ["-a", "-b", "-c"],
+        },
     );
 
     const listWithMultiplebothFlags: string[] = [
@@ -160,56 +176,59 @@ export function testShortFlagWithSingleArgument() {
         "-b",
     ];
 
-    assert.deepStrictEqual(parse(singleArgParser, listWithMultiplebothFlags), {
+    deepStrictEqual(parse(singleArgParser, listWithMultiplebothFlags), {
         flags: {
             a: {
                 isPresent: true,
-                arguments: Ok([ "hello" ]),
+                arguments: Ok(["hello"] as [string]),
+                flag: flagParser,
             },
         },
-        args: [ "--yes", "-c", "-a", "hello", "--no", "-b" ],
+        args: ["--yes", "-c", "-a", "hello", "--no", "-b"],
     });
 }
 
 export function testLongFlag() {
-    const emptyYesParser = parser([
-        longFlag("yes", "some help text", empty()),
-    ]);
+    const flagParser = longFlag("yes", "some help text", empty());
+    const emptyYesParser = parser(flagParser);
 
-    const emptyList: string[] = [ ];
+    const emptyList: string[] = [];
 
-    assert.deepStrictEqual(parse(emptyYesParser, emptyList), {
+    deepStrictEqual(parse(emptyYesParser, emptyList), {
         flags: {
             yes: {
                 isPresent: false,
-                arguments: Err("Long flag --yes not found"),
+                arguments: Err("Long flag --yes not found") as Result<boolean>,
+                flag: flagParser,
             },
         },
-        args: [ ],
+        args: [],
     });
 
-    const listWithSingleFlag: string[] = [ "--yes" ];
+    const listWithSingleFlag: string[] = ["--yes"];
 
-    assert.deepStrictEqual(parse(emptyYesParser, listWithSingleFlag), {
+    deepStrictEqual(parse(emptyYesParser, listWithSingleFlag), {
         flags: {
             yes: {
                 isPresent: true,
-                arguments: Ok(null),
+                arguments: Ok(true),
+                flag: flagParser,
             },
         },
-        args: [ "--yes" ],
+        args: ["--yes"],
     });
 
-    const listWithMultipleFlags: string[] = [ "--yes", "-b", "-c" ];
+    const listWithMultipleFlags: string[] = ["--yes", "-b", "-c"];
 
-    assert.deepStrictEqual(parse(emptyYesParser, listWithMultipleFlags), {
+    deepStrictEqual(parse(emptyYesParser, listWithMultipleFlags), {
         flags: {
             yes: {
                 isPresent: true,
-                arguments: Ok(null),
+                arguments: Ok(true),
+                flag: flagParser,
             },
         },
-        args: [ "--yes", "-b", "-c" ],
+        args: ["--yes", "-b", "-c"],
     });
 
     const listWithMultiplebothFlags: string[] = [
@@ -220,60 +239,63 @@ export function testLongFlag() {
         "-b",
     ];
 
-    assert.deepStrictEqual(parse(emptyYesParser, listWithMultiplebothFlags), {
+    deepStrictEqual(parse(emptyYesParser, listWithMultiplebothFlags), {
         flags: {
             yes: {
                 isPresent: true,
-                arguments: Ok(null),
+                arguments: Ok(true),
+                flag: flagParser,
             },
         },
-        args: [ "-c", "--yes", "-a", "--no", "-b" ],
+        args: ["-c", "--yes", "-a", "--no", "-b"],
     });
 }
 
 export function testLongFlagWithSingleArgument() {
-    const singleArgParser = parser([
-        longFlag("yes", "some help text", list([ string() ])),
-    ]);
+    const flagParser = longFlag("yes", "some help text", list([string()]));
+    const singleArgParser = parser(flagParser);
 
-    const emptyList: string[] = [ ];
+    const emptyList: string[] = [];
 
-    assert.deepStrictEqual(parse(singleArgParser, emptyList), {
+    deepStrictEqual(parse(singleArgParser, emptyList), {
         flags: {
             yes: {
                 isPresent: false,
-                arguments: Err("Long flag --yes not found"),
+                arguments: Err("Long flag --yes not found") as Result<[string]>,
+                flag: flagParser,
             },
         },
-        args: [ ],
+        args: [],
     });
 
-    const listWithSingleFlag: string[] = [ "--yes" ];
+    const listWithSingleFlag: string[] = ["--yes"];
 
-    assert.deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
         flags: {
             yes: {
                 isPresent: true,
                 arguments: Err(
-                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
-                ),
+                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0",
+                ) as Result<[string]>,
+                flag: flagParser,
             },
         },
-        args: [ "--yes" ],
+        args: ["--yes"],
     });
 
-    const listWithMultipleFlags: string[] = [ "--yes", "-b", "-c" ];
+    const listWithMultipleFlags: string[] = ["--yes", "-b", "-c"];
 
-    assert.deepStrictEqual(parse(singleArgParser, listWithMultipleFlags), {
+    deepStrictEqual(parse(singleArgParser, listWithMultipleFlags), {
         flags: {
             yes: {
                 isPresent: true,
                 arguments: Err(
-                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
-                ),
+                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0",
+                ) as Result<[string]>,
+                flag: flagParser,
             },
         },
-        args: [ "--yes", "-b", "-c" ],
+        args: ["--yes", "-b", "-c"],
     });
 
     const listWithMultiplebothFlags: string[] = [
@@ -284,16 +306,17 @@ export function testLongFlagWithSingleArgument() {
         "-b",
     ];
 
-    assert.deepStrictEqual(parse(singleArgParser, listWithMultiplebothFlags), {
+    deepStrictEqual(parse(singleArgParser, listWithMultiplebothFlags), {
         flags: {
             yes: {
                 isPresent: true,
                 arguments: Err(
-                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
-                ),
+                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0",
+                ) as Result<[string]>,
+                flag: flagParser,
             },
         },
-        args: [ "-c", "--yes", "-a", "--no", "-b" ],
+        args: ["-c", "--yes", "-a", "--no", "-b"],
     });
 
     const listWithMultiplebothFlagsAndAnArg: string[] = [
@@ -305,59 +328,61 @@ export function testLongFlagWithSingleArgument() {
         "-b",
     ];
 
-    assert.deepStrictEqual(
-        parse(singleArgParser, listWithMultiplebothFlagsAndAnArg),
-        {
-            flags: {
-                yes: {
-                    isPresent: true,
-                    arguments: Ok([ "hello" ]),
-                },
+    deepStrictEqual(parse(singleArgParser, listWithMultiplebothFlagsAndAnArg), {
+        flags: {
+            yes: {
+                isPresent: true,
+                arguments: Ok(["hello"] as [string]),
+                flag: flagParser,
             },
-            args: [ "-c", "--yes", "hello", "-a", "--no", "-b" ],
-        }
-    );
+        },
+        args: ["-c", "--yes", "hello", "-a", "--no", "-b"],
+    });
 }
 
 export function testBothFlag() {
-    const emptyYesParser = parser([
-        bothFlag("y", "yes", "some help text", empty()),
-    ]);
+    const flagParser = bothFlag("y", "yes", "some help text", empty());
+    const emptyYesParser = parser(flagParser);
 
-    const emptyList: string[] = [ ];
+    const emptyList: string[] = [];
 
-    assert.deepStrictEqual(parse(emptyYesParser, emptyList), {
+    deepStrictEqual(parse(emptyYesParser, emptyList), {
         flags: {
-            "y/yes": {
+            yes: {
                 isPresent: false,
-                arguments: Err("Mixed flag -y/--yes not found"),
+                arguments: Err(
+                    "Mixed flag -y/--yes not found",
+                ) as Result<boolean>,
+                flag: flagParser,
             },
         },
-        args: [ ],
+        args: [],
     });
 
-    const listWithSingleFlag: string[] = [ "--yes" ];
+    const listWithSingleFlag: string[] = ["--yes"];
 
-    assert.deepStrictEqual(parse(emptyYesParser, listWithSingleFlag), {
+    deepStrictEqual(parse(emptyYesParser, listWithSingleFlag), {
         flags: {
-            "y/yes": {
+            yes: {
                 isPresent: true,
-                arguments: Ok(null),
+                arguments: Ok(true),
+                flag: flagParser,
             },
         },
-        args: [ "--yes" ],
+        args: ["--yes"],
     });
 
-    const listWithMultipleFlags: string[] = [ "--yes", "-b", "-c" ];
+    const listWithMultipleFlags: string[] = ["--yes", "-b", "-c"];
 
-    assert.deepStrictEqual(parse(emptyYesParser, listWithMultipleFlags), {
+    deepStrictEqual(parse(emptyYesParser, listWithMultipleFlags), {
         flags: {
-            "y/yes": {
+            yes: {
                 isPresent: true,
-                arguments: Ok(null),
+                arguments: Ok(true),
+                flag: flagParser,
             },
         },
-        args: [ "--yes", "-b", "-c" ],
+        args: ["--yes", "-b", "-c"],
     });
 
     const listWithMultiplebothFlags: string[] = [
@@ -368,14 +393,15 @@ export function testBothFlag() {
         "-b",
     ];
 
-    assert.deepStrictEqual(parse(emptyYesParser, listWithMultiplebothFlags), {
+    deepStrictEqual(parse(emptyYesParser, listWithMultiplebothFlags), {
         flags: {
-            "y/yes": {
+            yes: {
                 isPresent: true,
-                arguments: Ok(null),
+                arguments: Ok(true),
+                flag: flagParser,
             },
         },
-        args: [ "-c", "--yes", "-a", "--no", "-b" ],
+        args: ["-c", "--yes", "-a", "--no", "-b"],
     });
 
     const listWithMultiplebothFlagsAndShortFlag: string[] = [
@@ -386,69 +412,78 @@ export function testBothFlag() {
         "-b",
     ];
 
-    assert.deepStrictEqual(
+    deepStrictEqual(
         parse(emptyYesParser, listWithMultiplebothFlagsAndShortFlag),
         {
             flags: {
-                "y/yes": {
+                yes: {
                     isPresent: true,
-                    arguments: Ok(null),
+                    arguments: Ok(true),
+                    flag: flagParser,
                 },
             },
             args: listWithMultiplebothFlagsAndShortFlag,
-        }
+        },
     );
 }
 
 export function testMultipleEmptyArguments() {
-    const emptyAOrYesParser = parser([
+    const shortFlagParser = shortFlag("a", "some help text", empty());
+    const longFlagParser = longFlag("yes", "some help text", empty());
+    const emptyAOrYesParser = parser(
         shortFlag("a", "some help text", empty()),
         longFlag("yes", "some help text", empty()),
-    ]);
+    );
 
-    const emptyList: string[] = [ ];
+    const emptyList: string[] = [];
 
-    assert.deepStrictEqual(parse(emptyAOrYesParser, emptyList), {
+    deepStrictEqual(parse(emptyAOrYesParser, emptyList), {
         flags: {
             a: {
                 isPresent: false,
-                arguments: Err("Short flag -a not found"),
+                arguments: Err("Short flag -a not found") as Result<boolean>,
+                flag: shortFlagParser,
             },
             yes: {
                 isPresent: false,
-                arguments: Err("Long flag --yes not found"),
+                arguments: Err("Long flag --yes not found") as Result<boolean>,
+                flag: longFlagParser,
             },
         },
-        args: [ ],
+        args: [],
     });
 
-    const listWithSingleFlag: string[] = [ "--yes" ];
+    const listWithSingleFlag: string[] = ["--yes"];
 
-    assert.deepStrictEqual(parse(emptyAOrYesParser, listWithSingleFlag), {
+    deepStrictEqual(parse(emptyAOrYesParser, listWithSingleFlag), {
         flags: {
             a: {
                 isPresent: false,
-                arguments: Err("Short flag -a not found"),
+                arguments: Err("Short flag -a not found") as Result<boolean>,
+                flag: shortFlagParser,
             },
             yes: {
                 isPresent: true,
-                arguments: Ok(null),
+                arguments: Ok(true),
+                flag: longFlagParser,
             },
         },
-        args: [ "--yes" ],
+        args: ["--yes"],
     });
 
-    const listWithMultipleFlags: string[] = [ "--yes", "-b", "-c" ];
+    const listWithMultipleFlags: string[] = ["--yes", "-b", "-c"];
 
-    assert.deepStrictEqual(parse(emptyAOrYesParser, listWithMultipleFlags), {
+    deepStrictEqual(parse(emptyAOrYesParser, listWithMultipleFlags), {
         flags: {
             a: {
                 isPresent: false,
-                arguments: Err("Short flag -a not found"),
+                arguments: Err("Short flag -a not found") as Result<boolean>,
+                flag: shortFlagParser,
             },
             yes: {
                 isPresent: true,
-                arguments: Ok(null),
+                arguments: Ok(true),
+                flag: longFlagParser,
             },
         },
         args: listWithMultipleFlags,
@@ -462,22 +497,21 @@ export function testMultipleEmptyArguments() {
         "-b",
     ];
 
-    assert.deepStrictEqual(
-        parse(emptyAOrYesParser, listWithMultiplebothFlags),
-        {
-            flags: {
-                a: {
-                    isPresent: true,
-                    arguments: Ok(null),
-                },
-                yes: {
-                    isPresent: true,
-                    arguments: Ok(null),
-                },
+    deepStrictEqual(parse(emptyAOrYesParser, listWithMultiplebothFlags), {
+        flags: {
+            a: {
+                isPresent: true,
+                arguments: Ok(true),
+                flag: shortFlagParser,
             },
-            args: listWithMultiplebothFlags,
-        }
-    );
+            yes: {
+                isPresent: true,
+                arguments: Ok(true),
+                flag: longFlagParser,
+            },
+        },
+        args: listWithMultiplebothFlags,
+    });
 
     const listWithMultiplebothFlagsInDifferentOrder: string[] = [
         "-c",
@@ -487,77 +521,84 @@ export function testMultipleEmptyArguments() {
         "-b",
     ];
 
-    assert.deepStrictEqual(
+    deepStrictEqual(
         parse(emptyAOrYesParser, listWithMultiplebothFlagsInDifferentOrder),
         {
             flags: {
                 a: {
                     isPresent: true,
-                    arguments: Ok(null),
+                    arguments: Ok(true),
+                    flag: shortFlagParser,
                 },
                 yes: {
                     isPresent: true,
-                    arguments: Ok(null),
+                    arguments: Ok(true),
+                    flag: longFlagParser,
                 },
             },
             args: listWithMultiplebothFlagsInDifferentOrder,
-        }
+        },
     );
 }
 
 export function testMultipleSingleArguments() {
-    const emptyAOrYesParser = parser([
-        shortFlag("a", "some help text", list([ string() ])),
-        longFlag("yes", "some help text", list([ string() ])),
-    ]);
+    const shortFlagParser = shortFlag("a", "some help text", list([string()]));
+    const longFlagParser = longFlag("yes", "some help text", list([string()]));
+    const emptyAOrYesParser = parser(shortFlagParser, longFlagParser);
 
-    const emptyList: string[] = [ ];
+    const emptyList: string[] = [];
 
-    assert.deepStrictEqual(parse(emptyAOrYesParser, emptyList), {
+    deepStrictEqual(parse(emptyAOrYesParser, emptyList), {
         flags: {
             a: {
                 isPresent: false,
-                arguments: Err("Short flag -a not found"),
+                arguments: Err("Short flag -a not found") as Result<[string]>,
+                flag: shortFlagParser,
             },
             yes: {
                 isPresent: false,
-                arguments: Err("Long flag --yes not found"),
+                arguments: Err("Long flag --yes not found") as Result<[string]>,
+                flag: longFlagParser,
             },
         },
-        args: [ ],
+        args: [],
     });
 
-    const listWithSingleFlag: string[] = [ "--yes" ];
+    const listWithSingleFlag: string[] = ["--yes"];
 
-    assert.deepStrictEqual(parse(emptyAOrYesParser, listWithSingleFlag), {
+    deepStrictEqual(parse(emptyAOrYesParser, listWithSingleFlag), {
         flags: {
             a: {
                 isPresent: false,
-                arguments: Err("Short flag -a not found"),
+                arguments: Err("Short flag -a not found") as Result<[string]>,
+                flag: shortFlagParser,
             },
             yes: {
                 isPresent: true,
                 arguments: Err(
-                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
-                ),
+                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0",
+                ) as Result<[string]>,
+                flag: longFlagParser,
             },
         },
-        args: [ "--yes" ],
+        args: ["--yes"],
     });
 
-    const listWithMultipleFlags: string[] = [ "--yes", "-b", "-c" ];
+    const listWithMultipleFlags: string[] = ["--yes", "-b", "-c"];
 
-    assert.deepStrictEqual(parse(emptyAOrYesParser, listWithMultipleFlags), {
+    deepStrictEqual(parse(emptyAOrYesParser, listWithMultipleFlags), {
         flags: {
             a: {
                 isPresent: false,
-                arguments: Err("Short flag -a not found"),
+                arguments: Err("Short flag -a not found") as Result<[string]>,
+                flag: shortFlagParser,
             },
             yes: {
                 isPresent: true,
                 arguments: Err(
-                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
-                ),
+                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0",
+                ) as Result<[string]>,
+                flag: longFlagParser,
             },
         },
         args: listWithMultipleFlags,
@@ -571,26 +612,25 @@ export function testMultipleSingleArguments() {
         "-b",
     ];
 
-    assert.deepStrictEqual(
-        parse(emptyAOrYesParser, listWithMultiplebothFlags),
-        {
-            flags: {
-                a: {
-                    isPresent: true,
-                    arguments: Err(
-                        "Error parsing -a due to: Not enough arguments. Expected a string. at index 0"
-                    ),
-                },
-                yes: {
-                    isPresent: true,
-                    arguments: Err(
-                        "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
-                    ),
-                },
+    deepStrictEqual(parse(emptyAOrYesParser, listWithMultiplebothFlags), {
+        flags: {
+            a: {
+                isPresent: true,
+                arguments: Err(
+                    "Error parsing -a due to: Not enough arguments. Expected a string. at index 0",
+                ) as Result<[string]>,
+                flag: shortFlagParser,
             },
-            args: listWithMultiplebothFlags,
-        }
-    );
+            yes: {
+                isPresent: true,
+                arguments: Err(
+                    "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0",
+                ) as Result<[string]>,
+                flag: longFlagParser,
+            },
+        },
+        args: listWithMultiplebothFlags,
+    });
 
     const listWithMultiplebothFlagsInDifferentOrder: string[] = [
         "-c",
@@ -600,347 +640,352 @@ export function testMultipleSingleArguments() {
         "-b",
     ];
 
-    assert.deepStrictEqual(
+    deepStrictEqual(
         parse(emptyAOrYesParser, listWithMultiplebothFlagsInDifferentOrder),
         {
             flags: {
                 a: {
                     isPresent: true,
                     arguments: Err(
-                        "Error parsing -a due to: Not enough arguments. Expected a string. at index 0"
-                    ),
+                        "Error parsing -a due to: Not enough arguments. Expected a string. at index 0",
+                    ) as Result<[string]>,
+                    flag: shortFlagParser,
                 },
                 yes: {
                     isPresent: true,
                     arguments: Err(
-                        "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0"
-                    ),
+                        "Error parsing --yes due to: Not enough arguments. Expected a string. at index 0",
+                    ) as Result<[string]>,
+                    flag: longFlagParser,
                 },
             },
             args: listWithMultiplebothFlagsInDifferentOrder,
-        }
+        },
     );
 }
 
 export function testShortFlagWithSingleNumberArgument() {
-    const singleArgParser = parser([
-        shortFlag("a", "some help text", list([ number() ])),
-    ]);
+    const shortFlagParser = shortFlag("a", "some help text", list([number()]));
+    const singleArgParser = parser(shortFlagParser);
 
-    const emptyList: string[] = [ ];
+    const emptyList: string[] = [];
 
-    assert.deepStrictEqual(parse(singleArgParser, emptyList), {
+    deepStrictEqual(parse(singleArgParser, emptyList), {
         flags: {
             a: {
                 isPresent: false,
-                arguments: Err("Short flag -a not found"),
+                arguments: Err("Short flag -a not found") as Result<[number]>,
+                flag: shortFlagParser,
             },
         },
-        args: [ ],
+        args: [],
     });
 
-    const listWithSingleFlag: string[] = [ "-a" ];
+    const listWithSingleFlag: string[] = ["-a"];
 
-    assert.deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
         flags: {
             a: {
                 isPresent: true,
                 arguments: Err(
-                    "Error parsing -a due to: Not enough arguments. Expected a number. at index 0"
-                ),
+                    "Error parsing -a due to: Not enough arguments. Expected a number. at index 0",
+                ) as Result<[number]>,
+                flag: shortFlagParser,
             },
         },
-        args: [ "-a" ],
+        args: ["-a"],
     });
 
-    const listWithSingleFlagWithArgument: string[] = [ "-a", "hello" ];
+    const listWithSingleFlagWithArgument: string[] = ["-a", "hello"];
 
-    assert.deepStrictEqual(
-        parse(singleArgParser, listWithSingleFlagWithArgument),
-        {
-            flags: {
-                a: {
-                    isPresent: true,
-                    arguments: Err(
-                        "Error parsing -a due to: Not a number argument"
-                    ),
-                },
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlagWithArgument), {
+        flags: {
+            a: {
+                isPresent: true,
+                arguments: Err(
+                    "Error parsing -a due to: Not a number argument",
+                ) as Result<[number]>,
+                flag: shortFlagParser,
             },
-            args: listWithSingleFlagWithArgument,
-        }
-    );
+        },
+        args: listWithSingleFlagWithArgument,
+    });
 
-    const listWithSingleFlagWithNumberArgument: string[] = [ "-a", "5.5" ];
+    const listWithSingleFlagWithNumberArgument: string[] = ["-a", "5.5"];
 
-    assert.deepStrictEqual(
+    deepStrictEqual(
         parse(singleArgParser, listWithSingleFlagWithNumberArgument),
         {
             flags: {
                 a: {
                     isPresent: true,
-                    arguments: Ok([ 5.5 ]),
+                    arguments: Ok([5.5] as [number]),
+                    flag: shortFlagParser,
                 },
             },
             args: listWithSingleFlagWithNumberArgument,
-        }
+        },
     );
 
-    const listWithSingleFlagWithIntArgument: string[] = [ "-a", "5" ];
+    const listWithSingleFlagWithIntArgument: string[] = ["-a", "5"];
 
-    assert.deepStrictEqual(
-        parse(singleArgParser, listWithSingleFlagWithIntArgument),
-        {
-            flags: {
-                a: {
-                    isPresent: true,
-                    arguments: Ok([ 5 ]),
-                },
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlagWithIntArgument), {
+        flags: {
+            a: {
+                isPresent: true,
+                arguments: Ok([5] as [number]),
+                flag: shortFlagParser,
             },
-            args: listWithSingleFlagWithIntArgument,
-        }
-    );
+        },
+        args: listWithSingleFlagWithIntArgument,
+    });
 
-    const listWithSingleFlagWithZeroArgument: string[] = [ "-a", "0" ];
+    const listWithSingleFlagWithZeroArgument: string[] = ["-a", "0"];
 
-    assert.deepStrictEqual(
+    deepStrictEqual(
         parse(singleArgParser, listWithSingleFlagWithZeroArgument),
         {
             flags: {
                 a: {
                     isPresent: true,
-                    arguments: Ok([ 0 ]),
+                    arguments: Ok([0] as [number]),
+                    flag: shortFlagParser,
                 },
             },
             args: listWithSingleFlagWithZeroArgument,
-        }
+        },
     );
 
-    const listWithSingleFlagWithNegativeArgument: string[] = [ "-a", "-5.5" ];
+    const listWithSingleFlagWithNegativeArgument: string[] = ["-a", "-5.5"];
 
-    assert.deepStrictEqual(
+    deepStrictEqual(
         parse(singleArgParser, listWithSingleFlagWithNegativeArgument),
         {
             flags: {
                 a: {
                     isPresent: true,
-                    arguments: Ok([ -5.5 ]),
+                    arguments: Ok([-5.5] as [number]),
+                    flag: shortFlagParser,
                 },
             },
             args: listWithSingleFlagWithNegativeArgument,
-        }
+        },
     );
 }
 
 export function testShortFlagWithSingleBooleanArgument() {
-    const singleArgParser = parser([
-        shortFlag("a", "some help text", list([ boolean() ])),
-    ]);
+    const shortFlagParser = shortFlag("a", "some help text", list([boolean()]));
+    const singleArgParser = parser(shortFlagParser);
 
-    const emptyList: string[] = [ ];
+    const emptyList: string[] = [];
 
-    assert.deepStrictEqual(parse(singleArgParser, emptyList), {
+    deepStrictEqual(parse(singleArgParser, emptyList), {
         flags: {
             a: {
                 isPresent: false,
-                arguments: Err("Short flag -a not found"),
+                arguments: Err("Short flag -a not found") as Result<[boolean]>,
+                flag: shortFlagParser,
             },
         },
-        args: [ ],
+        args: [],
     });
 
-    const listWithSingleFlag: string[] = [ "-a" ];
+    const listWithSingleFlag: string[] = ["-a"];
 
-    assert.deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
+        flags: {
+            a: {
+                isPresent: true,
+                arguments: Ok([true] as [boolean]),
+                flag: shortFlagParser,
+            },
+        },
+        args: ["-a"],
+    });
+
+    const listWithSingleFlagWithArgument: string[] = ["-a", "hello"];
+
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlagWithArgument), {
         flags: {
             a: {
                 isPresent: true,
                 arguments: Err(
-                    "Error parsing -a due to: Not enough arguments. Expected a boolean. at index 0"
-                ),
+                    "Error parsing -a due to: Not a boolean argument",
+                ) as Result<[boolean]>,
+                flag: shortFlagParser,
             },
         },
-        args: [ "-a" ],
+        args: listWithSingleFlagWithArgument,
     });
 
-    const listWithSingleFlagWithArgument: string[] = [ "-a", "hello" ];
+    const listWithSingleFlagWithTrueArgument: string[] = ["-a", "true"];
 
-    assert.deepStrictEqual(
-        parse(singleArgParser, listWithSingleFlagWithArgument),
-        {
-            flags: {
-                a: {
-                    isPresent: true,
-                    arguments: Err(
-                        "Error parsing -a due to: Not a boolean argument"
-                    ),
-                },
-            },
-            args: listWithSingleFlagWithArgument,
-        }
-    );
-
-    const listWithSingleFlagWithTrueArgument: string[] = [ "-a", "true" ];
-
-    assert.deepStrictEqual(
+    deepStrictEqual(
         parse(singleArgParser, listWithSingleFlagWithTrueArgument),
         {
             flags: {
                 a: {
                     isPresent: true,
-                    arguments: Ok([ true ]),
+                    arguments: Ok([true] as [boolean]),
+                    flag: shortFlagParser,
                 },
             },
             args: listWithSingleFlagWithTrueArgument,
-        }
+        },
     );
 
-    const listWithSingleFlagWithFalseArgument: string[] = [ "-a", "false" ];
+    const listWithSingleFlagWithFalseArgument: string[] = ["-a", "false"];
 
-    assert.deepStrictEqual(
+    deepStrictEqual(
         parse(singleArgParser, listWithSingleFlagWithFalseArgument),
         {
             flags: {
                 a: {
                     isPresent: true,
-                    arguments: Ok([ false ]),
+                    arguments: Ok([false] as [boolean]),
+                    flag: shortFlagParser,
                 },
             },
             args: listWithSingleFlagWithFalseArgument,
-        }
+        },
     );
 }
 
 export function testShortFlagWithMultipleArguments() {
-    const singleArgParser = parser([
-        shortFlag("a", "some help text", list([ boolean(), string() ])),
-    ]);
+    const shortFlagParser = shortFlag(
+        "a",
+        "some help text",
+        list([boolean(), string()]),
+    );
+    const singleArgParser = parser(shortFlagParser);
 
-    const emptyList: string[] = [ ];
+    const emptyList: string[] = [];
 
-    assert.deepStrictEqual(parse(singleArgParser, emptyList), {
+    deepStrictEqual(parse(singleArgParser, emptyList), {
         flags: {
             a: {
                 isPresent: false,
-                arguments: Err("Short flag -a not found"),
+                arguments: Err("Short flag -a not found") as Result<
+                    [boolean, string]
+                >,
+                flag: shortFlagParser,
             },
         },
-        args: [ ],
+        args: [],
     });
 
-    const listWithSingleFlag: string[] = [ "-a" ];
+    const listWithSingleFlag: string[] = ["-a"];
 
-    assert.deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
         flags: {
             a: {
                 isPresent: true,
                 arguments: Err(
-                    "Error parsing -a due to: Not enough arguments. Expected a boolean. at index 0"
-                ),
+                    "Error parsing -a due to: Not enough arguments. Expected a string. at index 1",
+                ) as Result<[boolean, string]>,
+                flag: shortFlagParser,
             },
         },
-        args: [ "-a" ],
+        args: ["-a"],
     });
 
-    const listWithSingleFlagWithArgument: string[] = [ "-a", "true", "hello" ];
+    const listWithSingleFlagWithArgument: string[] = ["-a", "true", "hello"];
 
-    assert.deepStrictEqual(
-        parse(singleArgParser, listWithSingleFlagWithArgument),
-        {
-            flags: {
-                a: {
-                    isPresent: true,
-                    arguments: Ok([ true, "hello" ]),
-                },
-            },
-            args: listWithSingleFlagWithArgument,
-        }
-    );
-}
-
-export function testShortFlagWithVariableArguments() {
-    const singleArgParser = parser([
-        shortFlag("a", "some help text", variableList(string())),
-    ]);
-
-    const emptyList: string[] = [ ];
-
-    assert.deepStrictEqual(parse(singleArgParser, emptyList), {
-        flags: {
-            a: {
-                isPresent: false,
-                arguments: Err("Short flag -a not found"),
-            },
-        },
-        args: [ ],
-    });
-
-    const listWithSingleFlag: string[] = [ "-a" ];
-
-    assert.deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlagWithArgument), {
         flags: {
             a: {
                 isPresent: true,
-                arguments: Ok([ ]),
+                arguments: Ok([true, "hello"] as [boolean, string]),
+                flag: shortFlagParser,
             },
         },
-        args: [ "-a" ],
+        args: listWithSingleFlagWithArgument,
+    });
+}
+
+export function testShortFlagWithVariableArguments() {
+    const flagParser = shortFlag("a", "some help text", variableList(string()));
+    const singleArgParser = parser(flagParser);
+
+    const emptyList: string[] = [];
+
+    deepStrictEqual(parse(singleArgParser, emptyList), {
+        flags: {
+            a: {
+                isPresent: false,
+                arguments: Err("Short flag -a not found") as Result<string[]>,
+                flag: flagParser,
+            },
+        },
+        args: [],
     });
 
-    const listWithSingleFlagWithArgument: string[] = [ "-a", "true", "hello" ];
+    const listWithSingleFlag: string[] = ["-a"];
 
-    assert.deepStrictEqual(
-        parse(singleArgParser, listWithSingleFlagWithArgument),
-        {
-            flags: {
-                a: {
-                    isPresent: true,
-                    arguments: Ok([ "true", "hello" ]),
-                },
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
+        flags: {
+            a: {
+                isPresent: true,
+                arguments: Ok([] as string[]),
+                flag: flagParser,
             },
-            args: listWithSingleFlagWithArgument,
-        }
-    );
+        },
+        args: ["-a"],
+    });
+
+    const listWithSingleFlagWithArgument: string[] = ["-a", "true", "hello"];
+
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlagWithArgument), {
+        flags: {
+            a: {
+                isPresent: true,
+                arguments: Ok(["true", "hello"] as string[]),
+                flag: flagParser,
+            },
+        },
+        args: listWithSingleFlagWithArgument,
+    });
 }
 
 export function testAllErrors() {
-    const someParser = parser([
-        shortFlag("a", "some help text", list([ number() ])),
+    const someParser = parser(
+        shortFlag("a", "some help text", list([number()])),
         shortFlag("b", "B", number()),
-        shortFlag("c", "C", oneOf([ "ban", "can" ])),
-    ]);
+        shortFlag("c", "C", oneOf(["ban", "can"])),
+    );
 
-    let parsed = parse(someParser, [ "-a", "-b", "-c" ]);
+    let parsed = parse(someParser, ["-a", "-b", "-c"]);
 
-    assert.deepStrictEqual(allErrors(parsed), [
+    deepStrictEqual(allErrors(parsed), [
         "Error parsing -a due to: Not enough arguments. Expected a number. at index 0",
         "Error parsing -b due to: Not enough arguments. Expected a number.",
         "Error parsing -c due to: Not enough arguments. Expected one of: ban | can.",
     ]);
 
-    parsed = parse(someParser, [ "-a", "1", "-b", "-c" ]);
+    parsed = parse(someParser, ["-a", "1", "-b", "-c"]);
 
-    assert.deepStrictEqual(allErrors(parsed), [
+    deepStrictEqual(allErrors(parsed), [
         "Error parsing -b due to: Not enough arguments. Expected a number.",
         "Error parsing -c due to: Not enough arguments. Expected one of: ban | can.",
     ]);
 }
 
 export function testAllMissing() {
-    const someParser = parser([
-        shortFlag("a", "some help text", list([ number() ])),
+    const someParser = parser(
+        shortFlag("a", "some help text", list([number()])),
         shortFlag("b", "B", number()),
-        shortFlag("c", "C", oneOf([ "ban", "can" ])),
-    ]);
+        shortFlag("c", "C", oneOf(["ban", "can"])),
+    );
 
-    let parsed = parse(someParser, [ ]);
+    let parsed = parse(someParser, []);
 
-    assert.deepStrictEqual(allMissing(parsed, [ ]), [ "a", "b", "c" ]);
+    deepStrictEqual(allMissing(parsed, []), ["a", "b", "c"]);
 
-    parsed = parse(someParser, [ "-a", "1", "-c" ]);
+    parsed = parse(someParser, ["-a", "1", "-c"]);
 
-    assert.deepStrictEqual(allMissing(parsed, [ ]), [ "b" ]);
+    deepStrictEqual(allMissing(parsed, []), ["b"]);
 
-    parsed = parse(someParser, [ "-a", "1" ]);
+    parsed = parse(someParser, ["-a", "1"]);
 
-    assert.deepStrictEqual(allMissing(parsed, [ "c" ]), [ "b" ]);
+    deepStrictEqual(allMissing(parsed, ["c"]), ["b"]);
 }

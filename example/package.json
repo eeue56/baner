@@ -10,5 +10,6 @@
     "license": "ISC",
     "dependencies": {
         "@eeue56/baner": "file:.."
-    }
+    },
+    "type": "module"
 }
