@@ -3,11 +3,17 @@
     "version": "0.0.3",
     "description": "Flag parsing library in Typescript",
     "type": "module",
-    "main": "build/baner.js",
+    "main": "build/baner.mjs",
     "types": "build/baner.d.ts",
+    "exports": {
+        "require": "./build/baner.cjs",
+        "import": "./build/baner.mjs"
+    },
     "scripts": {
-        "build": "tsc -p tsconfig.json",
-        "test": "npx @eeue56/bach",
+        "build": "tsc -p tsconfig.json && npm run build-cjs && npm run build-mjs",
+        "build-cjs": "npx esbuild --bundle src/baner.ts --outfile=build/baner.cjs --platform=node",
+        "build-mjs": "npx esbuild --bundle src/baner.ts --outfile=build/baner.mjs --platform=node --format=esm",
+        "test": "tsc --noEmit && npx @eeue56/bach && cd example && tsc --noEmit",
         "format": "npx prettier --write .",
         "docs": "npx @eeue56/geiriadur"
     },
@@ -29,9 +35,7 @@
         "@eeue56/bach": "^1.0.0",
         "@eeue56/geiriadur": "^0.0.3",
         "prettier": "^3.8.1",
-        "typescript": "^5.9.3"
-    },
-    "dependencies": {
-        "@eeue56/ts-core": "^3.0.1"
+        "typescript": "^5.9.3",
+        "esbuild": "^0.27.2"
     }
 }
