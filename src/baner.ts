@@ -323,7 +323,7 @@ function runParser<
 ): Program<flags> {
     const emptyRecord: Program<flags> = {
         args: parseable,
-        flags: {} as any,
+        flags: {} as Program<flags>["flags"],
     };
 
     for (const flag of Object.values(programParser.flags) as flags[number][]) {
@@ -438,13 +438,19 @@ export function allErrors<
 >(program: Program<flags>): string[] {
     const errors: string[] = [];
 
-    Object.keys(program.flags).map((key) => {
-        if (!(program.flags as any)[key].isPresent) return;
-        const argument = (program.flags as any)[key].arguments;
+    for (const key of Object.keys(program.flags) as InferFlagName<
+        flags[number]
+    >[]) {
+        const value = program.flags[key] as FlagResult<
+            FlagArgument<KnownTypes>,
+            InferFlagName<flags[number][]>
+        >;
+        if (!value.isPresent) continue;
+        const argument = value.arguments;
         if (argument.kind === "Err") {
             errors.push(argument.error);
         }
-    });
+    }
 
     return errors;
 }
