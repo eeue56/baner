@@ -6,6 +6,7 @@
     "main": "build/baner.mjs",
     "types": "build/baner.d.ts",
     "exports": {
+        "types": "./build.baner.d.ts",
         "require": "./build/baner.cjs",
         "import": "./build/baner.mjs"
     },
