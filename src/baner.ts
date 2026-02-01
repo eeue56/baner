@@ -1,5 +1,6 @@
 import type {
     BaseParseableTypes,
+    BaseVariableListFlagArgument,
     BasicTypes,
     Both,
     Flag,
@@ -15,6 +16,7 @@ import type {
     ProgramValues,
     Result,
     Short,
+    VariableListBasicTypes,
 } from "./types.ts";
 
 import { Err, Ok } from "./types.ts";
@@ -128,8 +130,8 @@ function runOneOf(
     return Err(`Didn't match any of: ${items.join(" | ")}`);
 }
 
-function runVariableList<flagType extends BaseParseableTypes>(
-    flagArgument: FlagArgument<flagType>,
+function runVariableList<flagType extends VariableListBasicTypes>(
+    flagArgument: BaseVariableListFlagArgument<flagType>,
     parseable: readonly string[],
 ): Result<readonly flagType[]> {
     const results: flagType[] = [];
@@ -172,9 +174,10 @@ function runArgument<const flagType extends FlagArgument<KnownTypes>>(
             >;
         }
         case "VariableListArgument": {
-            return runVariableList(argument.item, parseable) as Result<
-                InferFlagArgumentType<flagType>
-            >;
+            return runVariableList(
+                argument.item as BaseVariableListFlagArgument<VariableListBasicTypes>,
+                parseable,
+            ) as Result<InferFlagArgumentType<flagType>>;
         }
         case "OneOfArgument": {
             return runOneOf(argument.items, parseable) as Result<
@@ -443,7 +446,7 @@ export function allErrors<
     >[]) {
         const value = program.flags[key] as FlagResult<
             FlagArgument<KnownTypes>,
-            InferFlagName<flags[number][]>
+            InferFlagName<flags[number]>
         >;
         if (!value.isPresent) continue;
         const argument = value.arguments;

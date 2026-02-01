@@ -1,45 +1,53 @@
-export type Err<Error> = {
+export type Err<error> = {
     kind: "Err";
-    error: Error;
+    error: error;
 };
 
-export type Ok<Value> = {
+export type Ok<value> = {
     kind: "Ok";
-    value: Value;
+    value: value;
 };
 
-export type Result<Value> = Ok<Value> | Err<string>;
+export type Result<value> = Ok<value> | Err<string>;
 
-export function Ok<const Value>(value: Value): Result<Value> {
+export function Ok<const value>(value: value): Result<value> {
     return { kind: "Ok", value };
 }
 
-export function Err<const Value>(error: string): Result<Value> {
+export function Err<const value>(error: string): Result<value> {
     return { kind: "Err", error };
 }
 
 const OneOf = Symbol("OneOf");
-type OneOf = typeof OneOf;
+type OneOf<x extends readonly string[]> = typeof OneOf;
 
 const VariableList = Symbol("VariableList");
-type VariableList<x extends FlagArgument<BasicTypes>> = typeof VariableList;
+type VariableList<x extends FlagArgument<VariableListBasicTypes>> =
+    typeof VariableList;
 
 const List = Symbol("List");
 type List<x extends readonly FlagArgument<BasicTypes>[]> = typeof List;
 
 export type BasicTypes = string | number | boolean;
+export type VariableListBasicTypes = BasicTypes | OneOf<readonly string[]>;
 
 export type BaseParseableTypes =
-    | string
-    | number
-    | boolean
-    | OneOf
-    | VariableList<BaseFlagArguments<BasicTypes>>
-    | List<readonly BaseFlagArguments<BasicTypes>[]>;
+    | BasicTypes
+    | OneOf<readonly string[]>
+    | VariableList<BaseVariableListFlagArgument<VariableListBasicTypes>>
+    | List<readonly BaseFlagArgument<BasicTypes>[]>;
 
 export type KnownTypes = BaseParseableTypes;
 
-export type BaseFlagArguments<flagType extends BaseParseableTypes> =
+export type BaseVariableListFlagArgument<
+    flagType extends VariableListBasicTypes,
+> = flagType extends BasicTypes
+    ? BaseFlagArgument<flagType>
+    : flagType extends OneOf<readonly string[]>
+      ? OneOfArgument<readonly string[]>
+      : never;
+
+export type BaseFlagArgument<flagType extends BasicTypes> =
     flagType extends string
         ? StringArgument<string>
         : flagType extends number
@@ -49,22 +57,20 @@ export type BaseFlagArguments<flagType extends BaseParseableTypes> =
             : never;
 
 export type FlagArgument<flagType extends BaseParseableTypes> =
-    flagType extends string
-        ? StringArgument<string>
-        : flagType extends number
-          ? NumberArgument<number>
-          : flagType extends boolean
-            ? BooleanArgument<boolean>
-            : flagType extends OneOf
-              ? OneOfArgument<string[]>
-              : flagType extends VariableList<infer inner>
-                ? VariableListArgument<inner>
-                : flagType extends List<infer inner>
-                  ? ListArgument<inner>
-                  : never;
+    flagType extends BasicTypes
+        ? BaseFlagArgument<flagType>
+        : flagType extends OneOf<infer inner>
+          ? OneOfArgument<inner>
+          : flagType extends VariableList<infer inner>
+            ? VariableListArgument<inner>
+            : flagType extends List<infer inner>
+              ? ListArgument<inner>
+              : never;
 
 type InferVariableListFlagType<
-    flagArgument extends VariableListArgument<FlagArgument<BasicTypes>>,
+    flagArgument extends VariableListArgument<
+        FlagArgument<VariableListBasicTypes>
+    >,
 > =
     flagArgument extends VariableListArgument<infer inner>
         ? inner extends StringArgument<string>
@@ -73,7 +79,9 @@ type InferVariableListFlagType<
               ? number[]
               : inner extends BooleanArgument<boolean>
                 ? boolean[]
-                : never
+                : inner extends OneOfArgument<infer union>
+                  ? readonly union[number][]
+                  : "never"
         : never;
 
 type InferListFlagTypeRecursive<
@@ -109,9 +117,9 @@ type InferListFlagType<
 
 type InferOneOfFlagType<flagArgument extends OneOfArgument<readonly string[]>> =
     flagArgument extends OneOfArgument<infer inner>
-        ? inner extends string[]
+        ? inner extends readonly string[]
             ? inner[number]
-            : never
+            : inner
         : never;
 
 export type InferFlagArgumentType<
@@ -216,14 +224,16 @@ export function list<
     };
 }
 
-export type VariableListArgument<flagType extends FlagArgument<BasicTypes>> = {
+export type VariableListArgument<
+    flagType extends FlagArgument<VariableListBasicTypes>,
+> = {
     kind: "VariableListArgument";
     item: flagType;
 };
 
-function VariableListArgument<flagType extends FlagArgument<BasicTypes>>(
-    item: flagType,
-): VariableListArgument<flagType> {
+function VariableListArgument<
+    flagType extends FlagArgument<VariableListBasicTypes>,
+>(item: flagType): VariableListArgument<flagType> {
     return {
         kind: "VariableListArgument",
         item,
@@ -234,9 +244,9 @@ function VariableListArgument<flagType extends FlagArgument<BasicTypes>>(
  * An argument parser that treats an argument as a list
  */
 
-export function variableList<flagType extends FlagArgument<BasicTypes>>(
-    flagArgumentParser: flagType,
-): VariableListArgument<flagType> {
+export function variableList<
+    flagType extends FlagArgument<VariableListBasicTypes>,
+>(flagArgumentParser: flagType): VariableListArgument<flagType> {
     return VariableListArgument(flagArgumentParser);
 }
 
@@ -316,8 +326,6 @@ export function longFlag<
     return { kind: "Long", name, parser, help };
 }
 
-const fs = longFlag("name", "The name to say hi to", list([string()]));
-
 /**
  * A short or long flag, like -y or --yes
  */
@@ -334,11 +342,20 @@ export function bothFlag<
     return { kind: "Both", shortName, longName, help, parser };
 }
 
-export type InferFlagType<x> =
-    x extends Flag<FlagArgument<infer flagType>, infer name> ? flagType : never;
+export type InferFlagType<
+    x extends Flag<FlagArgument<BaseParseableTypes>, string>,
+> = x extends Flag<FlagArgument<infer flagType>, infer name> ? flagType : never;
 
-export type InferFlagName<x> =
-    x extends Flag<infer flagType, infer name> ? name : never;
+export type InferFlagName<
+    x extends Flag<FlagArgument<BaseParseableTypes>, string>,
+> = x extends Flag<infer flagType, infer name> ? name : never;
+
+export type InferFlagResultType<
+    x extends FlagResult<FlagArgument<KnownTypes>, string>,
+> =
+    x extends FlagResult<infer flagArgument, infer name>
+        ? InferFlagArgumentType<flagArgument>
+        : never;
 
 export type ProgramParser<
     flagTypes extends readonly Flag<FlagArgument<KnownTypes>, string>[],
@@ -347,15 +364,6 @@ export type ProgramParser<
         [k in flagTypes[number] as InferFlagName<k>]: k;
     };
 };
-
-export type FlagKeys<
-    parser extends ProgramParser<Flag<FlagArgument<KnownTypes>, string>[]>,
-> = [keyof parser["flags"]];
-
-export type FindFlag<
-    parser extends ProgramParser<Flag<FlagArgument<KnownTypes>, string>[]>,
-    name extends string,
-> = parser["flags"][name];
 
 /**
  * A Program contains all arguments given to it, and an record of all the flags
@@ -386,7 +394,7 @@ export type ProgramValues<
 /**
  * Infer a Program from a given parser, e.g:
  * ```
- * function handleFlag(program: ProgramOf<parser>) {}
+ * function handleFlag(program: ProgramOf<typeof parser>) {}
  * ```
  */
 export type ProgramOf<
@@ -394,3 +402,15 @@ export type ProgramOf<
         readonly Flag<FlagArgument<KnownTypes>, string>[]
     >,
 > = parser extends ProgramParser<infer flags> ? Program<flags> : never;
+
+/**
+ * Infer a ProgramValues from a given parser, e.g:
+ * ```
+ * function handleFlag(yes: ProgramValuesOf<typeof parser>["yes"]) {}
+ * ```
+ */
+export type ProgramValuesOf<
+    parser extends ProgramParser<
+        readonly Flag<FlagArgument<KnownTypes>, string>[]
+    >,
+> = parser extends ProgramParser<infer flags> ? ProgramValues<flags> : never;

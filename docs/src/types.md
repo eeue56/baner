@@ -51,10 +51,11 @@ export function Err<const Value>(error: string): Result<Value> {
 
 ```javascript
 export type BasicTypes = string | number | boolean;
+export type VariableListBasicTypes = BasicTypes | OneOf<readonly string[]>;
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L29-L30)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L30-L32)
 
 ## type BaseParseableTypes
 
@@ -63,13 +64,13 @@ export type BaseParseableTypes =
     | string
     | number
     | boolean
-    | OneOf
-    | VariableList<BaseFlagArguments<BasicTypes>>
+    | OneOf<readonly string[]>
+    | VariableList<BaseVariableListFlagArguments<VariableListBasicTypes>>
     | List<readonly BaseFlagArguments<BasicTypes>[]>;
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L31-L38)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L33-L40)
 
 ## type KnownTypes
 
@@ -78,7 +79,26 @@ export type KnownTypes = BaseParseableTypes;
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L39-L40)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L41-L42)
+
+## type BaseVariableListFlagArguments<
+
+```javascript
+export type BaseVariableListFlagArguments<
+    flagType extends VariableListBasicTypes,
+> = flagType extends string
+    ? StringArgument<string>
+    : flagType extends number
+      ? NumberArgument<number>
+      : flagType extends boolean
+        ? BooleanArgument<boolean>
+        : flagType extends OneOf<readonly string[]>
+          ? OneOfArgument<readonly string[]>
+          : never;
+
+```
+
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L43-L54)
 
 ## type BaseFlagArguments<flagType extends BaseParseableTypes>
 
@@ -94,7 +114,7 @@ export type BaseFlagArguments<flagType extends BaseParseableTypes> =
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L41-L49)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L55-L63)
 
 ## type FlagArgument<flagType extends BaseParseableTypes>
 
@@ -106,8 +126,8 @@ export type FlagArgument<flagType extends BaseParseableTypes> =
           ? NumberArgument<number>
           : flagType extends boolean
             ? BooleanArgument<boolean>
-            : flagType extends OneOf
-              ? OneOfArgument<string[]>
+            : flagType extends OneOf<infer inner>
+              ? OneOfArgument<inner>
               : flagType extends VariableList<infer inner>
                 ? VariableListArgument<inner>
                 : flagType extends List<infer inner>
@@ -116,7 +136,7 @@ export type FlagArgument<flagType extends BaseParseableTypes> =
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L50-L64)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L64-L78)
 
 ## type InferFlagArgumentType<
 
@@ -142,7 +162,7 @@ export type InferFlagArgumentType<
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L116-L134)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L134-L152)
 
 ## type FlagResult<
 
@@ -160,7 +180,7 @@ export type FlagResult<
 
 A result from a flag: contains the flag name, if it was present in the arguments,
 and whether the arguments were parsed as described.
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L139-L147)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L157-L165)
 
 ## type StringArgument<encode extends string>
 
@@ -169,7 +189,7 @@ export type StringArgument<encode extends string> = { kind: "StringArgument" };
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L148-L149)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L166-L167)
 
 ## string(): FlagArgument
 
@@ -178,7 +198,7 @@ export function string(): FlagArgument<string> {
 ```
 
 An argument parser that treats an argument as a string
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L154-L154)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L172-L172)
 
 ## type NumberArgument<encode extends number>
 
@@ -189,7 +209,7 @@ export type NumberArgument<encode extends number> = {
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L160-L163)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L178-L181)
 
 ## number(): NumberArgument
 
@@ -198,7 +218,7 @@ export function number(): NumberArgument<number> {
 ```
 
 An argument parser that treats an argument as a number
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L168-L168)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L186-L186)
 
 ## type BooleanArgument<encode extends boolean>
 
@@ -209,7 +229,7 @@ export type BooleanArgument<encode extends boolean> = {
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L174-L177)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L192-L195)
 
 ## boolean(): BooleanArgument
 
@@ -218,7 +238,7 @@ export function boolean(): BooleanArgument<boolean> {
 ```
 
 An argument parser that treats an argument as a boolean
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L182-L182)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L200-L200)
 
 ## empty(): FlagArgument
 
@@ -227,7 +247,7 @@ export function empty(): FlagArgument<true> {
 ```
 
 An argument parser that always passes
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L192-L192)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L210-L210)
 
 ## type ListArgument<
 
@@ -241,7 +261,7 @@ export type ListArgument<
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L198-L204)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L216-L222)
 
 ## list
 
@@ -252,30 +272,32 @@ export function list<
 ```
 
 An argument parser that treats an argument as a list
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L209-L211)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L227-L229)
 
-## type VariableListArgument<flagType extends FlagArgument<BasicTypes>>
+## type VariableListArgument<
 
 ```javascript
-export type VariableListArgument<flagType extends FlagArgument<BasicTypes>> = {
+export type VariableListArgument<
+    flagType extends FlagArgument<VariableListBasicTypes>,
+> = {
     kind: "VariableListArgument";
     item: flagType;
 };
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L218-L222)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L236-L242)
 
 ## variableList
 
 ```javascript
-export function variableList<flagType extends FlagArgument<BasicTypes>>(
-    flagArgumentParser: flagType,
-): VariableListArgument<flagType> {
+export function variableList<
+    flagType extends FlagArgument<VariableListBasicTypes>,
+>(flagArgumentParser: flagType): VariableListArgument<flagType> {
 ```
 
 An argument parser that treats an argument as a list
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L236-L238)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L256-L258)
 
 ## type OneOfArgument<encode extends readonly string[]>
 
@@ -287,7 +309,7 @@ export type OneOfArgument<encode extends readonly string[]> = {
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L242-L246)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L262-L266)
 
 ## oneOf
 
@@ -298,7 +320,7 @@ export function oneOf<const encode extends readonly string[]>(
 ```
 
 An argument parser that treats an argument as an enum
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L251-L253)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L271-L273)
 
 ## type Short<
 
@@ -315,7 +337,7 @@ export type Short<
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L260-L269)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L280-L289)
 
 ## type Long<
 
@@ -332,7 +354,7 @@ export type Long<
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L270-L279)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L290-L299)
 
 ## type Both<
 
@@ -350,7 +372,7 @@ export type Both<
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L280-L290)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L300-L310)
 
 ## type Flag<
 
@@ -362,7 +384,7 @@ export type Flag<
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L291-L295)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L311-L315)
 
 ## shortFlag
 
@@ -374,7 +396,7 @@ export function shortFlag<
 ```
 
 A short flag, like -y
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L300-L303)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L320-L323)
 
 ## longFlag
 
@@ -386,7 +408,7 @@ export function longFlag<
 ```
 
 A long flag, like --yes
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L311-L314)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L331-L334)
 
 ## bothFlag
 
@@ -403,27 +425,43 @@ export function bothFlag<
 ```
 
 A short or long flag, like -y or --yes
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L324-L332)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L344-L352)
 
-## type InferFlagType<x>
+## type InferFlagType<
 
 ```javascript
-export type InferFlagType<x> =
-    x extends Flag<FlagArgument<infer flagType>, infer name> ? flagType : never;
+export type InferFlagType<
+    x extends Flag<FlagArgument<BaseParseableTypes>, string>,
+> = x extends Flag<FlagArgument<infer flagType>, infer name> ? flagType : never;
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L336-L338)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L356-L359)
 
-## type InferFlagName<x>
+## type InferFlagName<
 
 ```javascript
-export type InferFlagName<x> =
-    x extends Flag<infer flagType, infer name> ? name : never;
+export type InferFlagName<
+    x extends Flag<FlagArgument<BaseParseableTypes>, string>,
+> = x extends Flag<infer flagType, infer name> ? name : never;
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L339-L341)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L360-L363)
+
+## type InferFlagResultType<
+
+```javascript
+export type InferFlagResultType<
+    x extends FlagResult<FlagArgument<KnownTypes>, string>,
+> =
+    x extends FlagResult<infer flagArgument, infer name>
+        ? InferFlagArgumentType<flagArgument>
+        : never;
+
+```
+
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L364-L370)
 
 ## type ProgramParser<
 
@@ -438,7 +476,7 @@ export type ProgramParser<
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L342-L349)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L371-L378)
 
 ## type FlagKeys<
 
@@ -449,7 +487,7 @@ export type FlagKeys<
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L350-L353)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L379-L382)
 
 ## type FindFlag<
 
@@ -461,7 +499,7 @@ export type FindFlag<
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L354-L358)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L383-L387)
 
 ## type Program<
 
@@ -481,7 +519,7 @@ export type Program<
 ```
 
 A Program contains all arguments given to it, and an record of all the flags
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L362-L373)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L391-L402)
 
 ## type ProgramValues<
 
@@ -497,7 +535,7 @@ export type ProgramValues<
 ```
 
 Extracted values from a parsed program
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L377-L384)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L406-L413)
 
 ## type ProgramOf<
 
@@ -513,7 +551,26 @@ export type ProgramOf<
 Infer a Program from a given parser, e.g:
 
 ```
-function handleFlag(program: ProgramOf<parser>) {}
+function handleFlag(program: ProgramOf<typeof parser>) {}
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L391-L396)
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L420-L425)
+
+## type ProgramValuesOf<
+
+```javascript
+export type ProgramValuesOf<
+    parser extends ProgramParser<
+        readonly Flag<FlagArgument<KnownTypes>, string>[]
+    >,
+> = parser extends ProgramParser<infer flags> ? ProgramValues<flags> : never;
+
+```
+
+Infer a ProgramValues from a given parser, e.g:
+
+```
+function handleFlag(yes: ProgramValuesOf<typeof parser>["yes"]) {}
+```
+
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L432-L437)

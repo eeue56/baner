@@ -947,6 +947,61 @@ export function testShortFlagWithVariableArguments() {
     });
 }
 
+export function testShortFlagWithVariableArgumentsOneOf() {
+    const flagParser = shortFlag(
+        "a",
+        "some help text",
+        variableList(oneOf(["fish", "frog"])),
+    );
+    const singleArgParser = parser(flagParser);
+
+    const emptyList: string[] = [];
+
+    deepStrictEqual(parse(singleArgParser, emptyList), {
+        flags: {
+            a: {
+                isPresent: false,
+                arguments: Err("Short flag -a not found") as Result<
+                    ("fish" | "frog")[]
+                >,
+                flag: flagParser,
+            },
+        },
+        args: [],
+    });
+
+    const listWithSingleFlag: string[] = ["-a"];
+
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlag), {
+        flags: {
+            a: {
+                isPresent: true,
+                arguments: Ok([]),
+                flag: flagParser,
+            },
+        },
+        args: ["-a"],
+    });
+
+    const listWithSingleFlagWithArgument: string[] = [
+        "-a",
+        "fish",
+        "frog",
+        "frog",
+    ];
+
+    deepStrictEqual(parse(singleArgParser, listWithSingleFlagWithArgument), {
+        flags: {
+            a: {
+                isPresent: true,
+                arguments: Ok(["fish", "frog", "frog"]),
+                flag: flagParser,
+            },
+        },
+        args: listWithSingleFlagWithArgument,
+    });
+}
+
 export function testAllErrors() {
     const someParser = parser(
         shortFlag("a", "some help text", list([number()])),

@@ -99,13 +99,21 @@ export function testShortFlagWithVariableArguments() {
 
 [View source](https://github.com/eeue56/baner/blob/main/src/baner_test.ts#L905-L905)
 
+## testShortFlagWithVariableArgumentsOneOf
+
+```javascript
+export function testShortFlagWithVariableArgumentsOneOf() {
+```
+
+[View source](https://github.com/eeue56/baner/blob/main/src/baner_test.ts#L949-L949)
+
 ## testAllErrors
 
 ```javascript
 export function testAllErrors() {
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/baner_test.ts#L949-L949)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner_test.ts#L1004-L1004)
 
 ## testAllMissing
 
@@ -113,4 +121,4 @@ export function testAllErrors() {
 export function testAllMissing() {
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/baner_test.ts#L972-L972)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner_test.ts#L1027-L1027)

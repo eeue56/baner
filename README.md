@@ -29,6 +29,7 @@ const helloParser = parser(
     longFlag("age", "The age of the person", number()),
     longFlag("pets", "Names of your pets", variableList(string())),
     longFlag("type", "Type of owner", oneOf(["human", "alien"])),
+    longFlag("pet-type", "Type of pets", variableList(oneOf(["cat", "dog"]))),
     bothFlag("h", "help", "This help text", empty()),
 );
 
@@ -37,6 +38,10 @@ function sayHi(
     age: number,
     pets: string[],
     type: "human" | "alien",
+    petTypes: Exclude<
+        ProgramValuesOf<typeof helloParser>["pet-type"],
+        undefined
+    >,
 ): void {
     console.log(`Hi, ${name}! Congrats on being ${age} years old.`);
     if (type === "alien") console.log("Welcome to earth!");
@@ -47,6 +52,10 @@ function sayHi(
                 ", ",
             )} were good pets to have`,
         );
+    }
+
+    for (const petType of petTypes) {
+        console.log("And it was a....", petType);
     }
 }
 
@@ -72,7 +81,13 @@ if (program.flags["help"].isPresent) {
         console.log("Missing flags:");
         console.log(missing.join("\n"));
     } else {
-        sayHi(values.name!, values.age!, values.pets!, values.type!);
+        sayHi(
+            values.name!,
+            values.age!,
+            values.pets!,
+            values.type!,
+            values["pet-type"]!,
+        );
     }
 }
 ```
