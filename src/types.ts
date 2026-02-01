@@ -372,6 +372,9 @@ export type Program<
     };
 };
 
+/**
+ * Extracted values from a parsed program
+ */
 export type ProgramValues<
     flags extends readonly Flag<FlagArgument<KnownTypes>, string>[],
 > = {
@@ -379,3 +382,15 @@ export type ProgramValues<
         | InferFlagArgumentType<k["parser"]>
         | undefined;
 };
+
+/**
+ * Infer a Program from a given parser, e.g:
+ * ```
+ * function handleFlag(program: ProgramOf<parser>) {}
+ * ```
+ */
+export type ProgramOf<
+    parser extends ProgramParser<
+        readonly Flag<FlagArgument<KnownTypes>, string>[]
+    >,
+> = parser extends ProgramParser<infer flags> ? Program<flags> : never;

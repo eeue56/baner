@@ -50,15 +50,16 @@ function sayHi(
     }
 }
 
-function showHelp(): void {
+function showHelp(program: ProgramOf<typeof helloParser>): void {
     console.log("Provide a name via --name and age via --age");
     console.log(help(helloParser));
+    console.log("Supported flags:", program.flags);
 }
 
 const program = parse(helloParser, process.argv);
 
 if (program.flags["help"].isPresent) {
-    showHelp();
+    showHelp(program);
 } else {
     const errors = allErrors(program);
     const missing = allMissing(program, ["help"]);

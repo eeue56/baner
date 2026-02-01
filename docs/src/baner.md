@@ -18,7 +18,7 @@ export function help<
 ```
 
 Creates a help text for a given program parser
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L400-L402)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L396-L398)
 
 ## allErrors
 
@@ -29,7 +29,7 @@ export function allErrors<
 ```
 
 Reports all errors in a program, ignoring missing flags.
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L439-L441)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L435-L437)
 
 ## allMissing
 
@@ -40,7 +40,7 @@ export function allMissing<
 ```
 
 Reports missing flags, ignoring the ones you don't care about.
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L458-L460)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L460-L462)
 
 ## allValues
 
@@ -51,7 +51,7 @@ export function allValues<
 ```
 
 Gets the Ok values out of the program as the raw type (i.e a `string` from `string()`)
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L474-L476)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L476-L478)
 
 ## parse
 
@@ -62,4 +62,4 @@ export function parse<
 ```
 
 Runs a flag parser on the args
-[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L495-L497)
+[View source](https://github.com/eeue56/baner/blob/main/src/baner.ts#L497-L499)

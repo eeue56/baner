@@ -469,7 +469,7 @@ export type FindFlag<
 export type Program<
     flagTypes extends readonly Flag<FlagArgument<KnownTypes>, string>[],
 > = {
-    args: string[];
+    args: readonly string[];
     readonly flags: {
         [k in flagTypes[number] as InferFlagName<k>]: FlagResult<
             k["parser"],
@@ -496,4 +496,24 @@ export type ProgramValues<
 
 ```
 
-[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L374-L381)
+Extracted values from a parsed program
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L377-L384)
+
+## type ProgramOf<
+
+```javascript
+export type ProgramOf<
+    parser extends ProgramParser<
+        readonly Flag<FlagArgument<KnownTypes>, string>[]
+    >,
+> = parser extends ProgramParser<infer flags> ? Program<flags> : never;
+
+```
+
+Infer a Program from a given parser, e.g:
+
+```
+function handleFlag(program: ProgramOf<parser>) {}
+```
+
+[View source](https://github.com/eeue56/baner/blob/main/src/types.ts#L391-L396)
